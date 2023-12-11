@@ -129,6 +129,9 @@ public:
 	void			Slice( CBaseEntity *pHitEntity, float flInterval, trace_t &tr );
 	void			Bump( CBaseEntity *pHitEntity, float flInterval, trace_t &tr );
 	void			Splash( const Vector &vecSplashPos );
+	Vector	GetEnemyTarget(void);
+	Vector			m_vecAttackPosition;
+	int				m_iAmmoType;
 
 	float			ManhackMaxSpeed( void );
 	virtual void	VPhysicsShadowCollision( int index, gamevcollisionevent_t *pEvent );
@@ -192,6 +195,7 @@ private:
 	void MaintainGroundHeight( void );
 
 	void StartBurst( const Vector &vecDirection );
+	void FireBullets(CBaseCombatCharacter* pOperator);
 	void StopBurst( bool bInterruptSchedule = false );
 
 	void UpdatePanels( void );
@@ -234,12 +238,15 @@ private:
 	Vector			m_vSwarmMoveTarget;		// Will fly here
 	float			m_fSwarmMoveTime;		// If time is less than this
 	float			m_fEnginePowerScale;	// scale all thrust by this amount (usually 1.0!)
+	float			m_flTimeNextAttack;
+
 
 	float			m_flNextEngineSoundTime;
 	float			m_flEngineStallTime;
 
 	float			m_flNextBurstTime;
 	float			m_flBurstDuration;
+	float			m_flFireTime;
 	Vector			m_vecBurstDirection;
 
 	float			m_flWaterSuspendTime;
@@ -279,6 +286,8 @@ private:
 	int				m_nLastWaterLevel;
 	bool			m_bDoSwarmBehavior;
 	bool			m_bGib;
+
+	int				m_iBurstSize;
 
 	bool			m_bHeld;
 	bool			m_bHackedByAlyx;

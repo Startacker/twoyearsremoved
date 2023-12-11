@@ -27,9 +27,12 @@
 #include "npc_combine.h"
 #include "rumble_shared.h"
 #include "gamestats.h"
+
 #ifdef MAPBASE
 #include "npc_playercompanion.h"
 #endif
+
+#define COMBINE_CANNON_BEAM "effects/blueblacklargebeam.vmt"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -41,10 +44,10 @@ ConVar sk_weapon_ar2_alt_fire_mass( "sk_weapon_ar2_alt_fire_mass", "150" );
 //=========================================================
 //=========================================================
 
-BEGIN_DATADESC( CWeaponAR2 )
+BEGIN_DATADESC(CWeaponAR2)
 
-	DEFINE_FIELD( m_flDelayedFire,	FIELD_TIME ),
-	DEFINE_FIELD( m_bShotDelayed,	FIELD_BOOLEAN ),
+	DEFINE_FIELD(m_flDelayedFire, FIELD_TIME),
+	DEFINE_FIELD(m_bShotDelayed, FIELD_BOOLEAN),
 	//DEFINE_FIELD( m_nVentPose, FIELD_INTEGER ),
 
 END_DATADESC()
@@ -223,6 +226,7 @@ void CWeaponAR2::Precache( void )
 
 	UTIL_PrecacheOther( "prop_combine_ball" );
 	UTIL_PrecacheOther( "env_entity_dissolver" );
+	PrecacheParticleSystem("piercer_tracer");
 }
 
 //-----------------------------------------------------------------------------
@@ -318,44 +322,138 @@ void CWeaponAR2::DelayedAttack( void )
 	pOwner->RumbleEffect(RUMBLE_SHOTGUN_DOUBLE, 0, RUMBLE_FLAG_RESTART );
 
 	// Fire the bullets
-	Vector vecSrc	 = pOwner->Weapon_ShootPosition( );
-	Vector vecAiming = pOwner->GetAutoaimVector( AUTOAIM_SCALE_DEFAULT );
-	Vector impactPoint = vecSrc + ( vecAiming * MAX_TRACE_LENGTH );
-
-	// Fire the bullets
-	Vector vecVelocity = vecAiming * 1000.0f;
+	Vector	vecSrcOwner = pOwner->Weapon_ShootPosition();
+	PierceShot(vecSrcOwner, true);
 
 	// Fire the combine ball
-	CreateCombineBall(	vecSrc, 
-						vecVelocity, 
-						sk_weapon_ar2_alt_fire_radius.GetFloat(), 
-						sk_weapon_ar2_alt_fire_mass.GetFloat(),
-						sk_weapon_ar2_alt_fire_duration.GetFloat(),
-						pOwner );
+	//CreateCombineBall(	vecSrc, 
+	//					vecVelocity, 
+	//					sk_weapon_ar2_alt_fire_radius.GetFloat(), 
+	//					sk_weapon_ar2_alt_fire_mass.GetFloat(),
+	//					sk_weapon_ar2_alt_fire_duration.GetFloat(),
+	//					pOwner );
 
 	// View effects
 	color32 white = {255, 255, 255, 64};
 	UTIL_ScreenFade( pOwner, white, 0.1, 0, FFADE_IN  );
 	
 	//Disorient the player
-	QAngle angles = pOwner->GetLocalAngles();
+	//QAngle angles = pOwner->GetLocalAngles();
 
-	angles.x += random->RandomInt( -4, 4 );
-	angles.y += random->RandomInt( -4, 4 );
-	angles.z = 0;
+	//angles.x += random->RandomInt( -4, 4 );
+	//angles.y += random->RandomInt( -4, 4 );
+	//angles.z = 0;
 
-	pOwner->SnapEyeAngles( angles );
+	//pOwner->SnapEyeAngles( angles );
 	
-	pOwner->ViewPunch( QAngle( random->RandomInt( -8, -12 ), random->RandomInt( 1, 2 ), 0 ) );
+	pOwner->ViewPunch( QAngle( random->RandomInt( -2, -6 ), random->RandomInt( 1, 2 ), 0 ) );
 
 	// Decrease ammo
 	pOwner->RemoveAmmo( 1, m_iSecondaryAmmoType );
+	m_iClip1 -= 10;
 
 	// Can shoot again immediately
-	m_flNextPrimaryAttack = gpGlobals->curtime + 0.5f;
+	m_flNextPrimaryAttack = gpGlobals->curtime + 1.0f;
 
 	// Can blow up after a short delay (so have time to release mouse button)
 	m_flNextSecondaryAttack = gpGlobals->curtime + 1.0f;
+}
+
+void CWeaponAR2::PierceShot(Vector& vecSrc, bool FirstShot )
+{
+	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
+
+	if (pPlayer == NULL)
+		return;
+
+	Vector	vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_SCALE_DEFAULT);
+	Vector	vecLooking = pPlayer->Weapon_ShootPosition();
+	int iAttachment = GetTracerAttachment();
+
+	if (FirstShot == true)
+	{
+		Msg("PERFORMING FIRST SHOT\n");
+		pPlayer->FireBullets(1, vecSrc, vecAiming, GetBulletSpread(), MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 0, -1, -1, 40, NULL, true, false);
+
+		Vector	vecAimingEnd = vecLooking + (vecAiming * MAX_TRACE_LENGTH);
+		
+		trace_t tr;
+		UTIL_TraceLine(vecLooking, vecAimingEnd, MASK_SHOT, pPlayer, COLLISION_GROUP_NONE, &tr);
+
+		UTIL_ParticleTracer("piercer_tracer", vecLooking, tr.endpos, entindex(), iAttachment, true);
+
+		if (tr.m_pEnt)
+		{
+			if (tr.m_pEnt->IsNPC() || tr.m_pEnt->VPhysicsGetObject() || tr.m_pEnt->GetCollisionGroup() == COLLISION_GROUP_BREAKABLE_GLASS || (tr.surface.flags & SURF_SKY) == false)
+			{
+				Vector vecCursor = tr.endpos;
+				vecCursor += vecAiming * 4;
+
+				if (UTIL_PointContents(vecCursor) != CONTENTS_SOLID)
+				{
+					// Passed through the entity
+					PierceShot(vecCursor, false);
+					Msg("PASSED THROUGH\n");
+				}
+				else
+				{
+					Msg("PASS THROUGH SOLID\n");
+					return;
+				}
+			}
+			else
+			{
+				Msg("INVALID SURFACE\n");
+				return;
+				
+			}
+		}
+		else
+		{
+			Msg("SOLID SURFACE OR INVALID\n");
+			return;
+		}
+	}
+	else
+	{
+		Msg("PERFORMING SECOND SHOT\n");
+		Vector	vecAimingEnd = vecLooking + (vecAiming * MAX_TRACE_LENGTH);
+		trace_t tr2;
+		UTIL_ParticleTracer("piercer_tracer", vecSrc, tr2.endpos, entindex(), iAttachment, true);
+		UTIL_TraceLine(vecSrc, vecAimingEnd, MASK_SHOT, pPlayer, COLLISION_GROUP_NONE, &tr2);
+		pPlayer->FireBullets(1, vecSrc, vecAiming, GetBulletSpread(), MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 0, -1, -1, 40, NULL, true, false);
+
+		if (tr2.m_pEnt)
+		{
+			if (tr2.m_pEnt->IsNPC() || tr2.m_pEnt->VPhysicsGetObject() || tr2.m_pEnt->GetCollisionGroup() == COLLISION_GROUP_BREAKABLE_GLASS)
+			{
+				Vector vecCursor = tr2.endpos;
+				vecCursor += vecAiming * 32;
+
+				if (UTIL_PointContents(vecCursor) != CONTENTS_SOLID)
+				{
+					// Passed through the entity
+					Msg("PASSED THROUGH\n");
+					PierceShot(vecCursor, false);
+				}
+				else
+				{
+					Msg("PASS THROUGH SOLID\n");
+					return;
+				}
+			}
+			else
+			{
+				Msg("INVALID SURFACE\n");
+				return;
+			}
+		}
+		else
+		{
+			Msg("SOLID SURFACE OR INVALID\n");
+			return;
+		}
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -371,6 +469,15 @@ void CWeaponAR2::SecondaryAttack( void )
 	{
 		SendWeaponAnim( ACT_VM_DRYFIRE );
 		BaseClass::WeaponSound( EMPTY );
+		m_flNextSecondaryAttack = gpGlobals->curtime + 0.5f;
+		return;
+	}
+
+	//Must have ammo
+	if (m_iClip1 < 10)
+	{
+		SendWeaponAnim(ACT_VM_DRYFIRE);
+		BaseClass::WeaponSound(EMPTY);
 		m_flNextSecondaryAttack = gpGlobals->curtime + 0.5f;
 		return;
 	}

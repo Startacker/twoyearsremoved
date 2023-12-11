@@ -76,7 +76,7 @@
 //#define MANHACK_GLOW_SPRITE	"sprites/laserdot.vmt"
 #define MANHACK_GLOW_SPRITE	"sprites/glow1.vmt"
 
-#define	MANHACK_CHARGE_MIN_DIST	200
+#define	MANHACK_CHARGE_MIN_DIST	300
 
 #if defined(MAPBASE) && defined(HL2_EPISODIC)
 extern ConVar npc_alyx_interact_manhacks;
@@ -85,6 +85,7 @@ extern ConVar npc_alyx_interact_manhacks;
 ConVar	sk_manhack_health( "sk_manhack_health","0");
 ConVar	sk_manhack_melee_dmg( "sk_manhack_melee_dmg","0");
 ConVar	sk_manhack_v2( "sk_manhack_v2","1");
+ConVar	sk_manhack_burstsize("sk_manhack_burst_size", "3");
 
 extern void		SpawnBlood(Vector vecSpot, const Vector &vAttackDir, int bloodColor, float flDamage);
 extern float	GetFloorZ(const Vector &origin);
@@ -195,6 +196,7 @@ BEGIN_DATADESC( CNPC_Manhack )
 	DEFINE_FIELD( m_flBurstDuration,	FIELD_FLOAT ),
 	DEFINE_FIELD( m_vecBurstDirection,	FIELD_VECTOR ),
 	DEFINE_FIELD( m_bShowingHostile,	FIELD_BOOLEAN ),
+	DEFINE_FIELD( m_iBurstSize, FIELD_INTEGER ),
 
 	// Function Pointers
 	DEFINE_INPUTFUNC( FIELD_VOID,	"DisableSwarm", InputDisableSwarm ),
@@ -984,10 +986,10 @@ int CNPC_Manhack::TranslateSchedule( int scheduleType )
 	case SCHED_CHASE_ENEMY:
 		{
 			// If we're waiting for our next attack opportunity, just swarm
-			if ( m_flNextBurstTime > gpGlobals->curtime )
-			{
-				return SCHED_MANHACK_SWARM;
-			}
+			//if ( m_flNextBurstTime > gpGlobals->curtime )
+			//{
+			//	return SCHED_MANHACK_SWARM;
+			//}
 
 			if ( !m_bDoSwarmBehavior || OccupyStrategySlotRange( SQUAD_SLOT_ATTACK1, SQUAD_SLOT_ATTACK2 ) )
 			{
@@ -1166,10 +1168,10 @@ bool CNPC_Manhack::OverrideMove( float flInterval )
 	// -----------------------------------------------------------------
 	// If I'm supposed to swarm somewhere, try to go there
 	// ------------------------------------------------------------------
-	else if (m_fSwarmMoveTime > gpGlobals->curtime)
-	{
-		MoveToTarget(flInterval, m_vSwarmMoveTarget);
-	}
+	//else if (m_fSwarmMoveTime > gpGlobals->curtime)
+	//{
+	//	MoveToTarget(flInterval, m_vSwarmMoveTarget);
+	//}
 	// -----------------------------------------------------------------
 	// If I don't have anything better to do, just decelerate
 	// -------------------------------------------------------------- ----
@@ -1254,8 +1256,8 @@ void CNPC_Manhack::MoveToTarget(float flInterval, const Vector &vMoveTarget)
 	// Move towards our target
 	// -------------------------------------
 	float	myAccel;
-	float	myZAccel = 300.0f;
-	float	myDecay	 = 0.3f;
+	float	myZAccel = 350.0f;
+	float	myDecay	 = 0.2f;
 
 	Vector targetDir;
 	float flDist;
@@ -1292,14 +1294,14 @@ void CNPC_Manhack::MoveToTarget(float flInterval, const Vector &vMoveTarget)
 		NDebugOverlay::Cross3D( GetAbsOrigin() , -Vector(8,8,8), Vector(8,8,8), 255, 0, 0, true, 2.1f );
 		*/
 
-		targetDir = m_vecBurstDirection;
+		
 
-		flDist	= FLT_MAX;
-		myDecay	 = 0.3f;
+		flDist	= VectorNormalize( targetDir );
+		myDecay	 = 0.2f;
 #ifdef _XBOX
 		myAccel	 = 500;
 #else
-		myAccel	 = 400;
+		myAccel	 = 200;
 #endif // _XBOX
 		myZAccel = MIN( 500, zDist / flInterval );
 	}
@@ -1317,12 +1319,12 @@ void CNPC_Manhack::MoveToTarget(float flInterval, const Vector &vMoveTarget)
 		if( flDot > 0.25 )
 		{
 			// If my target is in front of me, my flight model is a bit more accurate.
-			myAccel = 300;
+			myAccel = 250;
 		}
 		else
 		{
 			// Have a harder time correcting my course if I'm currently flying away from my target.
-			myAccel = 200;
+			myAccel = 128;
 		}
 	}
 
@@ -1360,6 +1362,8 @@ void CNPC_Manhack::MoveToTarget(float flInterval, const Vector &vMoveTarget)
 	m_vTargetBanking.x	= 40 * DotProduct( forward, targetDir );
 	m_vTargetBanking.z	= 40 * DotProduct( right, targetDir );
 	m_vTargetBanking.y	= 0.0;
+
+
 }
 
 
@@ -1919,7 +1923,12 @@ void CNPC_Manhack::MoveExecute_Alive(float flInterval)
 
 			float flDot = DotProduct( vecCurrentDir, vecToEnemy );
 
-			if ( flDot > 0.75 )
+			if (m_flFireTime <= gpGlobals->curtime && m_iBurstSize > 0)
+			{
+				FireBullets(this);
+			}
+
+			if (flDot > 0.75)
 			{				
 				Vector offsetDir = ( vecToEnemy - vecCurrentDir );
 				VectorNormalize( offsetDir );
@@ -1932,8 +1941,9 @@ void CNPC_Manhack::MoveExecute_Alive(float flInterval)
 				m_vForceVelocity += ( offsetDir * ( offsetSpeed.Length2D() * 0.25f ) );
 
 				// Commit to the attack- no steering for about a second
-				StartBurst( vecToEnemy );
+				//StartBurst( vecToEnemy );
 				SetEyeState( MANHACK_EYE_STATE_CHARGE );
+
 			}
 		}
 		
@@ -2437,6 +2447,8 @@ void CNPC_Manhack::Spawn(void)
 	m_flWaterSuspendTime		= gpGlobals->curtime;
 	m_flEngineStallTime			= gpGlobals->curtime;
 	m_fForceMoveTime			= gpGlobals->curtime;
+	m_flFireTime = gpGlobals->curtime;
+	m_iBurstSize = 3;
 	m_vForceMoveTarget			= vec3_origin;
 	m_fSwarmMoveTime			= gpGlobals->curtime;
 	m_vSwarmMoveTarget			= vec3_origin;
@@ -3222,10 +3234,12 @@ void CNPC_Manhack::ShowHostile( bool hostile /*= true*/)
 //-----------------------------------------------------------------------------
 void CNPC_Manhack::StartBurst( const Vector &vecDirection )
 {
+
 	if ( m_flBurstDuration > gpGlobals->curtime )
 		return;
 
 	ShowHostile();
+	
 
 	// Don't burst attack again for a couple seconds
 	m_flNextBurstTime = gpGlobals->curtime + 2.0;
@@ -3233,6 +3247,36 @@ void CNPC_Manhack::StartBurst( const Vector &vecDirection )
 	
 	// Save off where we were going towards and for how long
 	m_vecBurstDirection = vecDirection;
+}
+
+void CNPC_Manhack::FireBullets(CBaseCombatCharacter* pOperator )
+{
+	Vector vecSrc;
+	Vector vecAiming;
+
+	QAngle	angShootDir;
+	GetAttachment(LookupAttachment("eye"), vecSrc, angShootDir);
+	AngleVectors(angShootDir, &vecAiming);
+	EmitSound("Weapon_Pistol.NPC_Single");
+
+	Vector	vecAimingEnd = vecAiming + (vecAiming * MAX_TRACE_LENGTH);
+
+	CSoundEnt::InsertSound(SOUND_COMBAT | SOUND_CONTEXT_GUNFIRE, pOperator->GetAbsOrigin(), SOUNDENT_VOLUME_MACHINEGUN, 0.2, pOperator, SOUNDENT_CHANNEL_WEAPON, pOperator->GetEnemy());
+	trace_t tr;
+	UTIL_TraceLine(vecAiming, vecAimingEnd, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
+
+	UTIL_Tracer(vecSrc, tr.endpos, 0, TRACER_DONT_USE_ATTACHMENT, 8000, true, "GunshipTracer");
+	pOperator->FireBullets(1, vecSrc, vecAiming, VECTOR_CONE_1DEGREES, MAX_TRACE_LENGTH, 1, 0, -1, -1, 7, this, true, false);
+
+	m_iBurstSize--;
+	m_flFireTime = gpGlobals->curtime + .1;
+
+	if (m_iBurstSize == 0)
+	{
+		//We've finished our burst
+		m_flFireTime = gpGlobals->curtime + 1.8;
+		m_iBurstSize = 3;
+	}
 }
 
 //-----------------------------------------------------------------------------

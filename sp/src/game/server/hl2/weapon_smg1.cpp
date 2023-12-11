@@ -17,6 +17,7 @@
 #include "soundent.h"
 #include "rumble_shared.h"
 #include "gamestats.h"
+#include "flechettes.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -53,7 +54,7 @@ public:
 
 	virtual const Vector& GetBulletSpread( void )
 	{
-		static const Vector cone = VECTOR_CONE_5DEGREES;
+		static const Vector cone = VECTOR_CONE_4DEGREES;
 		return cone;
 	}
 
@@ -431,7 +432,7 @@ void CWeaponSMG1::SecondaryAttack( void )
 		return;
 
 	//Must have ammo
-	if ( ( pPlayer->GetAmmoCount( m_iSecondaryAmmoType ) <= 0 ) || ( pPlayer->GetWaterLevel() == 3 ) )
+	if ( m_iClip1 < 10 )
 	{
 		SendWeaponAnim( ACT_VM_DRYFIRE );
 		BaseClass::WeaponSound( EMPTY );
@@ -439,8 +440,13 @@ void CWeaponSMG1::SecondaryAttack( void )
 		return;
 	}
 
-	if( m_bInReload )
-		m_bInReload = false;
+	//Must not be reloading
+	if (m_bInReload)
+	{
+		BaseClass::WeaponSound(EMPTY);
+		m_flNextSecondaryAttack = gpGlobals->curtime + 0.5f;
+		return;
+	}
 
 	// MUST call sound before removing a round from the clip of a CMachineGun
 	BaseClass::WeaponSound( WPN_DOUBLE );
@@ -452,18 +458,30 @@ void CWeaponSMG1::SecondaryAttack( void )
 	// Don't autoaim on grenade tosses
 	AngleVectors( pPlayer->EyeAngles() + pPlayer->GetPunchAngle(), &vecThrow );
 	VectorScale( vecThrow, 1000.0f, vecThrow );
-	
-	//Create the grenade
-	QAngle angles;
-	VectorAngles( vecThrow, angles );
+	m_iClip1 -= 10;
+	//QAngle angShoot;
+	//VectorAngles(vecSrc, angShoot);
+	QAngle angEye = pPlayer->EyeAngles();
+	CFlechette* entity = CFlechette::FlechetteCreate(pPlayer->EyePosition(), angEye, pPlayer);
+	if (entity)
+	{
+		entity->Precache();
+		DispatchSpawn(entity);
+		Vector forward;
+		pPlayer->EyeVectors(&forward);
+		forward *= 3000.0f;
+		entity->Shoot(forward, false);
+	}
+	//QAngle angles;
+	/*VectorAngles(vecThrow, angles);
 	CGrenadeAR2 *pGrenade = (CGrenadeAR2*)Create( "grenade_ar2", vecSrc, angles, pPlayer );
 	pGrenade->SetAbsVelocity( vecThrow );
 
 	pGrenade->SetLocalAngularVelocity( RandomAngle( -400, 400 ) );
 	pGrenade->SetMoveType( MOVETYPE_FLYGRAVITY, MOVECOLLIDE_FLY_BOUNCE ); 
 	pGrenade->SetThrower( GetOwner() );
-	pGrenade->SetDamage( sk_plr_dmg_smg1_grenade.GetFloat() );
-
+	pGrenade->SetDamage( sk_plr_dmg_smg1_grenade.GetFloat() );*/
+	
 	SendWeaponAnim( ACT_VM_SECONDARYATTACK );
 
 	CSoundEnt::InsertSound( SOUND_COMBAT, GetAbsOrigin(), 1000, 0.2, GetOwner(), SOUNDENT_CHANNEL_WEAPON );
@@ -476,7 +494,7 @@ void CWeaponSMG1::SecondaryAttack( void )
 #endif
 
 	// Decrease ammo
-	pPlayer->RemoveAmmo( 1, m_iSecondaryAmmoType );
+	//pPlayer->RemoveAmmo( 1, m_iSecondaryAmmoType );
 
 	// Can shoot again immediately
 	m_flNextPrimaryAttack = gpGlobals->curtime + 0.5f;

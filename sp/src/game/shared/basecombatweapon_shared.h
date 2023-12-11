@@ -150,6 +150,7 @@ enum WeaponClass_t
 #define VECTOR_CONE_9DEGREES		Vector( 0.07846, 0.07846, 0.07846 )
 #define VECTOR_CONE_10DEGREES		Vector( 0.08716, 0.08716, 0.08716 )
 #define VECTOR_CONE_15DEGREES		Vector( 0.13053, 0.13053, 0.13053 )
+#define VECTOR_CONE_15DEGREES_SQUASH	Vector( 0.13053, 0.02618, 0.13053 ) //15 degrees x and z with 3 degrees y
 #define VECTOR_CONE_20DEGREES		Vector( 0.17365, 0.17365, 0.17365 )
 
 //-----------------------------------------------------------------------------

@@ -2,8 +2,8 @@
 //
 // Purpose: A shotgun.
 //
-//			Primary attack: single barrel shot.
-//			Secondary attack: double barrel shot.
+//			Primary attack: single inaccurate shot
+//			Secondary attack: double duckbill shot
 //
 //=============================================================================//
 
@@ -50,7 +50,7 @@ public:
 	virtual const Vector& GetBulletSpread( void )
 	{
 		static Vector vitalAllyCone = VECTOR_CONE_3DEGREES;
-		static Vector cone = VECTOR_CONE_10DEGREES;
+		static Vector cone = VECTOR_CONE_15DEGREES;
 
 		if( GetOwner() && (GetOwner()->Classify() == CLASS_PLAYER_ALLY_VITAL) )
 		{
@@ -637,14 +637,14 @@ void CWeaponShotgun::SecondaryAttack( void )
 #else
 	m_flNextPrimaryAttack = gpGlobals->curtime + SequenceDuration();
 #endif
-	m_iClip1 -= 2;	// Shotgun uses same clip for primary and secondary attacks
+	m_iClip1 -= 1;	// Shotgun uses same clip for primary and secondary attacks
 
 	Vector vecSrc	 = pPlayer->Weapon_ShootPosition();
 	Vector vecAiming = pPlayer->GetAutoaimVector( AUTOAIM_SCALE_DEFAULT );	
 
 	// Fire the bullets
 #ifdef MAPBASE
-	pPlayer->FireBullets( sk_plr_num_shotgun_pellets_double.GetInt(), vecSrc, vecAiming, GetBulletSpread(), MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 0, -1, -1, 0, NULL, false, false );
+	pPlayer->FireBullets( sk_plr_num_shotgun_pellets_double.GetInt(), vecSrc, vecAiming, VECTOR_CONE_15DEGREES_SQUASH, MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 0, -1, -1, 0, NULL, false, false );
 #else
 	pPlayer->FireBullets( 12, vecSrc, vecAiming, GetBulletSpread(), MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 0, -1, -1, 0, NULL, false, false );
 #endif
@@ -736,14 +736,14 @@ void CWeaponShotgun::ItemPostFrame( void )
 	{
 		m_bDelayedFire2 = false;
 		
-		if ( (m_iClip1 <= 1 && UsesClipsForAmmo1()))
+		if ( (m_iClip1 <= 0 && UsesClipsForAmmo1()))
 		{
 			// If only one shell is left, do a single shot instead	
-			if ( m_iClip1 == 1 )
-			{
-				PrimaryAttack();
-			}
-			else if (!pOwner->GetAmmoCount(m_iPrimaryAmmoType))
+			//if ( m_iClip1 == 1 )
+			//{
+			//	PrimaryAttack();
+			//}
+			if (!pOwner->GetAmmoCount(m_iPrimaryAmmoType))
 			{
 				DryFire();
 			}

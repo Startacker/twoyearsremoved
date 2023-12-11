@@ -31,6 +31,7 @@ public:
 	
 	void	SecondaryAttack( void );
 	void	DelayedAttack( void );
+	void	PierceShot(Vector& vecSr, bool FirstShot );
 
 	const char *GetTracerType( void ) { return "AR2Tracer"; }
 
@@ -43,7 +44,7 @@ public:
 
 	int		GetMinBurst( void ) { return 2; }
 	int		GetMaxBurst( void ) { return 5; }
-	float	GetFireRate( void ) { return 0.1f; }
+	float	GetFireRate( void ) { return 0.15f; }
 
 	bool	CanHolster( void );
 	bool	Reload( void );
@@ -58,7 +59,7 @@ public:
 	{
 		static Vector cone;
 		
-		cone = VECTOR_CONE_3DEGREES;
+		cone = VECTOR_CONE_2DEGREES;
 
 		return cone;
 	}
@@ -77,6 +78,4 @@ public:
 	DECLARE_ACTTABLE();
 	DECLARE_DATADESC();
 };
-
-
 #endif	//WEAPONAR2_H

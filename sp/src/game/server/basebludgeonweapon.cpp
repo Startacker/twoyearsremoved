@@ -168,6 +168,8 @@ void CBaseHLBludgeonWeapon::Hit( trace_t &traceHit, Activity nHitActivity, bool 
 		{
 			// If bonking an NPC, adjust damage.
 			info.AdjustPlayerDamageInflictedForSkillLevel();
+			//Leech off of this for player supply gain with the vitality sword -star
+			Resupply();
 		}
 
 		CalculateMeleeDamageForce( &info, hitDirection, traceHit.endpos );
@@ -186,6 +188,89 @@ void CBaseHLBludgeonWeapon::Hit( trace_t &traceHit, Activity nHitActivity, bool 
 
 	// Apply an impact effect
 	ImpactEffect( traceHit );
+}
+
+void CBaseHLBludgeonWeapon::Resupply()
+{
+	CBasePlayer* pPlayer = ToBasePlayer(GetOwner());
+
+	if (pPlayer == NULL)
+		return;
+
+	float flCurrentHealth = pPlayer->GetHealth();
+
+	if (flCurrentHealth < 100)
+	{
+		if (flCurrentHealth < 10)
+		{
+			pPlayer->TakeHealth(25, 0);
+		}
+		else if (flCurrentHealth < 75)
+		{
+			pPlayer->TakeHealth(10, 0);
+		}
+		else
+		{
+			pPlayer->TakeHealth(5, 0);
+		}
+	}
+	//TODO: Make these skill variables for easier modification -star
+	//Check for AR ammo
+	if (pPlayer->Weapon_GetWpnForAmmo(1))
+	{
+		float flCurrentARAmmo = pPlayer->GetAmmoCount(1);
+
+		if (flCurrentARAmmo < 90)
+		{
+			if (flCurrentARAmmo < 15)
+			{
+				pPlayer->GiveAmmo(15, 1, true);
+			}
+			else if (flCurrentARAmmo < 45)
+			{
+				pPlayer->GiveAmmo(10, 1, true);
+			}
+			else
+			{
+				pPlayer->GiveAmmo(5, 1, true);
+			}
+		}
+	}
+	//Check for SMG ammo
+	if (pPlayer->Weapon_GetWpnForAmmo(4))
+	{
+		float flCurrentSMGAmmo = pPlayer->GetAmmoCount(4);
+
+		if (flCurrentSMGAmmo < 150)
+		{
+			if (flCurrentSMGAmmo < 30)
+			{
+				pPlayer->GiveAmmo(30, 4, true);
+			}
+			else
+			{
+				pPlayer->GiveAmmo(15, 4, true);
+			}
+		}
+	}
+	//Check for Shotgun ammo
+	if (pPlayer->Weapon_GetWpnForAmmo(7))
+	{
+		float flCurrentShotgunAmmo = pPlayer->GetAmmoCount(7);
+
+		if (flCurrentShotgunAmmo < 24)
+		{
+			if (flCurrentShotgunAmmo < 4)
+			{
+				pPlayer->GiveAmmo(8, 7, true);
+			}
+			else
+			{
+				pPlayer->GiveAmmo(4, 7, true);
+			}
+		}
+	}
+	WeaponSound(SPECIAL1);
 }
 
 Activity CBaseHLBludgeonWeapon::ChooseIntersectionPointAndActivity( trace_t &hitTrace, const Vector &mins, const Vector &maxs, CBasePlayer *pOwner )
