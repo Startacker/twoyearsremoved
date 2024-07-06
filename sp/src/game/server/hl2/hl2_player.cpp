@@ -549,6 +549,7 @@ BEGIN_DATADESC( CHL2_Player )
 	DEFINE_FIELD( m_flMoveTime, FIELD_TIME ),
 	DEFINE_FIELD( m_flLastDamageTime, FIELD_TIME ),
 	DEFINE_FIELD( m_flTargetFindTime, FIELD_TIME ),
+	DEFINE_FIELD( m_flDashTime, FIELD_TIME),
 
 	DEFINE_FIELD( m_flAdmireGlovesAnimTime, FIELD_TIME ),
 	DEFINE_FIELD( m_flNextFlashlightCheckTime, FIELD_TIME ),
@@ -750,11 +751,11 @@ void CHL2_Player::HandleSpeedChanges( void )
 		{
 			if ( sv_stickysprint.GetBool() )
 			{
-				StartAutoSprint();
+				//StartAutoSprint();
 			}
 			else
 			{
-				StartSprinting();
+				Dash();
 			}
 		}
 		else
@@ -910,7 +911,7 @@ void CHL2_Player::PreThink(void)
 		// If we're ducked and not in the air
 		if( IsDucked() && GetGroundEntity() != NULL )
 		{
-			StopSprinting();
+			//StopSprinting();
 		}
 		// Stop sprinting if the player lets off the stick for a moment.
 		else if( GetStickDist() == 0.0f )
@@ -948,9 +949,10 @@ void CHL2_Player::PreThink(void)
 	WaterMove();
 	VPROF_SCOPE_END();
 
-	if ( g_pGameRules && g_pGameRules->FAllowFlashlight() )
-		m_Local.m_iHideHUD &= ~HIDEHUD_FLASHLIGHT;
-	else
+	//Never show flashlight HUD
+	//if ( g_pGameRules && g_pGameRules->FAllowFlashlight() )
+	//	m_Local.m_iHideHUD &= ~HIDEHUD_FLASHLIGHT;
+	//else
 		m_Local.m_iHideHUD |= HIDEHUD_FLASHLIGHT;
 
 	
@@ -1148,6 +1150,7 @@ void CHL2_Player::PreThink(void)
 			m_nButtons &= ~(IN_ATTACK|IN_ATTACK2);
 		}
 	}
+	//StopDash();
 }
 
 void CHL2_Player::PostThink( void )
@@ -1568,9 +1571,9 @@ void CHL2_Player::InitSprinting( void )
 bool CHL2_Player::CanSprint()
 {
 	return ( m_bSprintEnabled &&										// Only if sprint is enabled 
-			!IsWalking() &&												// Not if we're walking
-			!( m_Local.m_bDucked && !m_Local.m_bDucking ) &&			// Nor if we're ducking
-			(GetWaterLevel() != 3) &&									// Certainly not underwater
+			//!IsWalking() &&												// Not if we're walking
+			//!( m_Local.m_bDucked && !m_Local.m_bDucking ) &&			// Nor if we're ducking
+			//(GetWaterLevel() != 3) &&									// Certainly not underwater
 			(GlobalEntity_GetState("suit_no_sprint") != GLOBAL_ON) );	// Out of the question without the sprint module
 }
 
@@ -1584,9 +1587,82 @@ void CHL2_Player::StartAutoSprint()
 	}
 	else
 	{
-		StartSprinting();
+		//StartSprinting();
 		m_bIsAutoSprinting = true;
 		m_fAutoSprintMinTime = gpGlobals->curtime + 1.5f;
+	}
+}
+
+//-----------------------------------------------------------------------------
+//Replacement for sprinting
+//-----------------------------------------------------------------------------
+void CHL2_Player::Dash(void)
+{
+	/*
+	if (m_flDashTime > gpGlobals->curtime)
+		return;
+	//If you don't have enough power, no dashing
+	if (m_HL2Local.m_flSuitPower < 40)
+	{
+		if (m_afButtonPressed & IN_SPEED)
+		{
+			CPASAttenuationFilter filter(this);
+			filter.UsePredictionRules();
+			EmitSound(filter, entindex(), "HL2Player.SprintNoPower");
+		}
+		return;
+	}
+	SuitPower_Drain(40);
+	CPASAttenuationFilter filter(this);
+	filter.UsePredictionRules();
+	EmitSound(filter, entindex(), "HL2Player.SprintStart");
+	
+	int forward;
+	int horz;
+	int up;
+
+	if (m_afButtonPressed & IN_BACK)
+	{
+		forward = -2;
+	}
+	else if (m_afButtonPressed & IN_FORWARD)
+	{
+		forward = 2;
+	}
+	else if (m_afButtonPressed & IN_MOVELEFT)
+	{
+		horz = -2;
+	}
+	else if (m_afButtonPressed & IN_MOVERIGHT)
+	{
+		horz = 2;
+	}
+	//Always set Z momentum to 0
+	up = 0;
+	ApplyAbsVelocityImpulse(Vector(forward, horz, up));
+
+	m_flDashTime = gpGlobals->curtime + 0.15;
+	*/
+}
+
+void CHL2_Player::StopDash(void)
+{
+	if (m_flDashTime == gpGlobals->curtime)
+	{
+		Vector flSpeed = GetAbsVelocity();
+		Vector flKillSpeed;
+
+		//Are we moving faster than necessary?
+		if (flSpeed.x > 800)
+		{
+			flKillSpeed.x = flSpeed.x * 0.3;
+		}
+		if (flSpeed.y > 800)
+		{
+			flKillSpeed.y = flSpeed.y * 0.3;
+		}
+		flKillSpeed.z = 0;
+		SetAbsVelocity(flKillSpeed);
 	}
 }
 
@@ -1686,12 +1762,12 @@ void CHL2_Player::StopWalking( void )
 //-----------------------------------------------------------------------------
 bool CHL2_Player::CanZoom( CBaseEntity *pRequester )
 {
-	if ( IsZooming() )
+	//if ( IsZooming() )
 		return false;
 
 	//Check our weapon
 
-	return true;
+	//return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -1713,6 +1789,7 @@ void CHL2_Player::ToggleZoom(void)
 //-----------------------------------------------------------------------------
 void CHL2_Player::StartZooming( void )
 {
+	/*
 #ifdef MAPBASE
 	int iFOV = GetPlayerProxy() ? GetPlayerProxy()->m_SuitZoomFOV : 25;
 #else
@@ -1722,6 +1799,7 @@ void CHL2_Player::StartZooming( void )
 	{
 		m_HL2Local.m_bZooming = true;
 	}
+	*/
 }
 
 //-----------------------------------------------------------------------------
@@ -2584,25 +2662,7 @@ int CHL2_Player::FlashlightIsOn( void )
 //-----------------------------------------------------------------------------
 void CHL2_Player::FlashlightTurnOn( void )
 {
-	if( m_bFlashlightDisabled )
-		return;
-
-	if ( Flashlight_UseLegacyVersion() )
-	{
-		if( !SuitPower_AddDevice( SuitDeviceFlashlight ) )
-			return;
-	}
-#ifdef HL2_DLL
-	if( !IsSuitEquipped() )
-		return;
-#endif
-
-	AddEffects( EF_DIMLIGHT );
-	EmitSound( "HL2Player.FlashLightOn" );
-
-	variant_t flashlighton;
-	flashlighton.SetFloat( m_HL2Local.m_flSuitPower / 100.0f );
-	FirePlayerProxyOutput( "OnFlashlightOn", flashlighton, this, this );
+	//No flashlight for you
 }
 
 

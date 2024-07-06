@@ -239,6 +239,7 @@ void CBaseHLBludgeonWeapon::Resupply()
 			pPlayer->TakeHealth(5, 0);
 		}
 	}
+
 	//TODO: Make these skill variables for easier modification -star
 	//Check for AR ammo
 	if (pPlayer->Weapon_GetWpnForAmmo(1))
@@ -260,6 +261,7 @@ void CBaseHLBludgeonWeapon::Resupply()
 				pPlayer->GiveAmmo(5, 1, true);
 			}
 		}
+		pPlayer->Weapon_GetWpnForAmmo(1)->FinishReload();
 	}
 	//Check for SMG ammo
 	if (pPlayer->Weapon_GetWpnForAmmo(4))
@@ -277,6 +279,7 @@ void CBaseHLBludgeonWeapon::Resupply()
 				pPlayer->GiveAmmo(15, 4, true);
 			}
 		}
+		pPlayer->Weapon_GetWpnForAmmo(4)->FinishReload();
 	}
 	//Check for Shotgun ammo
 	if (pPlayer->Weapon_GetWpnForAmmo(7))
@@ -294,7 +297,13 @@ void CBaseHLBludgeonWeapon::Resupply()
 				pPlayer->GiveAmmo(4, 7, true);
 			}
 		}
+		//FIXME: This feels hacky as hell
+		int ammoFill = (4 - pPlayer->Weapon_GetWpnForAmmo(7)->m_iClip1);
+		pPlayer->RemoveAmmo(ammoFill, 7);
+		pPlayer->Weapon_GetWpnForAmmo(7)->m_iClip1 += ammoFill;
+
 	}
+
 	WeaponSound(SPECIAL1);
 }
 

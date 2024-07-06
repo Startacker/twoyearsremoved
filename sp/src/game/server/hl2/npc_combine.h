@@ -112,6 +112,7 @@ public:
 
 	Class_T			Classify( void );
 	bool			IsElite() { return m_fIsElite; }
+	bool			IsProto() { return m_fIsProto; }
 #ifdef MAPBASE
 	bool			IsAltFireCapable();
 	bool			IsGrenadeCapable();
@@ -369,6 +370,7 @@ public:
 	int				m_iLastAnimEventHandled;
 #endif
 	bool			m_fIsElite;
+	bool			m_fIsProto;
 #ifndef MAPBASE // CAI_GrenadeUser
 	Vector			m_vecAltFireTarget;
 #endif

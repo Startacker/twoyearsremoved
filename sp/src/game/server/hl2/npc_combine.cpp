@@ -419,6 +419,7 @@ void CNPC_Combine::Precache()
 
 	PrecacheScriptSound( "NPC_Combine.GrenadeLaunch" );
 	PrecacheScriptSound( "NPC_Combine.WeaponBash" );
+	PrecacheScriptSound( "NPC_Combine.WeaponBashGrenadier" );
 #ifndef MAPBASE // Now that we use WeaponSound(SPECIAL1), this isn't necessary
 	PrecacheScriptSound( "Weapon_CombineGuard.Special1" );
 #endif
@@ -2897,15 +2898,22 @@ void CNPC_Combine::HandleAnimEvent( animevent_t *pEvent )
 					{
 						if ( pBCC->IsPlayer() )
 						{
-							pBCC->ViewPunch( QAngle(-12,-7,0) );
-							pHurt->ApplyAbsVelocityImpulse( forward * 100 + up * 50 );
+							if (IsElite()) //Grenadiers have stronger bashes
+							{
+								pBCC->ViewPunch(QAngle(-12, -7, 0));
+								pHurt->ApplyAbsVelocityImpulse(forward * 500 + up * 325);
+								EmitSound("NPC_Combine.WeaponBashGrenadier");
+							}
+							else
+							{
+								pBCC->ViewPunch(QAngle(-12, -7, 0));
+								pHurt->ApplyAbsVelocityImpulse(forward * 100 + up * 50);
+								EmitSound("NPC_Combine.WeaponBash");
+							}
 						}
-
-						CTakeDamageInfo info( this, this, m_nKickDamage, DMG_CLUB );
-						CalculateMeleeDamageForce( &info, forward, pBCC->GetAbsOrigin() );
-						pBCC->TakeDamage( info );
-
-						EmitSound( "NPC_Combine.WeaponBash" );
+						CTakeDamageInfo info(this, this, m_nKickDamage, DMG_CLUB);
+						CalculateMeleeDamageForce(&info, forward, pBCC->GetAbsOrigin());
+						pBCC->TakeDamage(info);
 					}
 				}			
 

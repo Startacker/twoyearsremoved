@@ -31,6 +31,9 @@
 ConVar	sk_combine_s_health( "sk_combine_s_health","0");
 ConVar	sk_combine_s_kick( "sk_combine_s_kick","0");
 
+ConVar	sk_combine_proto_health("sk_combine_proto_health", "0");
+ConVar	sk_combine_proto_kick("sk_combine_proto_kick", "0");
+
 ConVar sk_combine_guard_health( "sk_combine_guard_health", "0");
 ConVar sk_combine_guard_kick( "sk_combine_guard_kick", "0");
  
@@ -65,6 +68,13 @@ void CNPC_CombineS::Spawn( void )
 		SetHealth( sk_combine_guard_health.GetFloat() );
 		SetMaxHealth( sk_combine_guard_health.GetFloat() );
 		SetKickDamage( sk_combine_guard_kick.GetFloat() );
+	}
+	else if ( IsProto() )
+	{
+		//Weaker health/
+		SetHealth(sk_combine_proto_health.GetFloat());
+		SetMaxHealth(sk_combine_proto_health.GetFloat());
+		SetKickDamage(sk_combine_proto_kick.GetFloat());
 	}
 	else
 	{
@@ -105,9 +115,14 @@ void CNPC_CombineS::Precache()
 	{
 		m_fIsElite = true;
 	}
+	else if (!Q_stricmp(pModelName, "models/combine_soldier_prisonguard.mdl"))
+	{
+		m_fIsProto = true;
+	}
 	else
 	{
 		m_fIsElite = false;
+		m_fIsProto = false;
 	}
 
 	if( !GetModelName() )

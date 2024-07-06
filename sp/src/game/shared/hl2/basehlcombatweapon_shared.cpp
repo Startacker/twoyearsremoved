@@ -56,6 +56,8 @@ void CBaseHLCombatWeapon::ItemHolsterFrame( void )
 {
 	BaseClass::ItemHolsterFrame();
 
+	//Mechanic has essentially moved over to the Vitality Sword's automatic reloading.
+	/*
 	// Must be player held
 	if ( GetOwner() && GetOwner()->IsPlayer() == false )
 		return;
@@ -71,6 +73,7 @@ void CBaseHLCombatWeapon::ItemHolsterFrame( void )
 		FinishReload();
 		m_flHolsterTime = gpGlobals->curtime;
 	}
+	*/
 }
 
 //-----------------------------------------------------------------------------

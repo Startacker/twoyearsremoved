@@ -865,6 +865,8 @@ CWeaponShotgun::CWeaponShotgun( void )
 //-----------------------------------------------------------------------------
 void CWeaponShotgun::ItemHolsterFrame( void )
 {
+	//Mechanic has essentially moved over to the Vitality Sword's automatic reloading.
+	/*
 	// Must be player held
 	if ( GetOwner() && GetOwner()->IsPlayer() == false )
 		return;
@@ -891,6 +893,7 @@ void CWeaponShotgun::ItemHolsterFrame( void )
 		GetOwner()->RemoveAmmo( ammoFill, GetPrimaryAmmoType() );
 		m_iClip1 += ammoFill;
 	}
+	*/
 }
 
 //==================================================

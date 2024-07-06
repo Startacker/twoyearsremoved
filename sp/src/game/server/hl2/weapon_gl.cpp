@@ -1,8 +1,7 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
 //
-// Purpose: 
+// Simple grenade launcher, NPC used only, slow rate of fire with limited capacity
+// Cannibalizes SMG code for this, may be janky
 //
-//=============================================================================//
 
 #include "cbase.h"
 #include "basehlcombatweapon.h"
@@ -12,28 +11,25 @@
 #include "player.h"
 #include "game.h"
 #include "in_buttons.h"
-#include "grenade_ar2.h"
 #include "ai_memory.h"
 #include "soundent.h"
 #include "rumble_shared.h"
 #include "gamestats.h"
-#include "flechettes.h"
+#include "grenade_frag.h"
+
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-extern ConVar    sk_plr_dmg_smg1_grenade;	
-#ifdef MAPBASE
-extern ConVar    sk_npc_dmg_smg1_grenade;
-#endif
+extern ConVar	sk_gl_timer;
 
-class CWeaponSMG1 : public CHLSelectFireMachineGun
+class CWeaponGL : public CHLSelectFireMachineGun
 {
 	DECLARE_DATADESC();
 public:
-	DECLARE_CLASS( CWeaponSMG1, CHLSelectFireMachineGun );
+	DECLARE_CLASS( CWeaponGL, CHLSelectFireMachineGun );
 
-	CWeaponSMG1();
+	CWeaponGL();
 
 	DECLARE_SERVERCLASS();
 	
@@ -41,13 +37,10 @@ public:
 	void	AddViewKick( void );
 	void	SecondaryAttack( void );
 
-	int		GetMinBurst() { return 2; }
-	int		GetMaxBurst() { return 5; }
-
 	virtual void Equip( CBaseCombatCharacter *pOwner );
 	bool	Reload( void );
 
-	float	GetFireRate( void ) { return 0.075f; }	// 13.3hz
+	float	GetFireRate( void ) { return 1.0f; }	// 1 round every second
 	int		CapabilitiesGet( void ) { return bits_CAP_WEAPON_RANGE_ATTACK1; }
 	int		WeaponRangeAttack2Condition( float flDot, float flDist );
 	Activity	GetPrimaryAttackActivity( void );
@@ -70,22 +63,23 @@ protected:
 
 	Vector	m_vecTossVelocity;
 	float	m_flNextGrenadeCheck;
+	COutputEHANDLE	m_OnThrowGrenade;
 };
 
-IMPLEMENT_SERVERCLASS_ST(CWeaponSMG1, DT_WeaponSMG1)
+IMPLEMENT_SERVERCLASS_ST(CWeaponGL, DT_WeaponGL)
 END_SEND_TABLE()
 
-LINK_ENTITY_TO_CLASS( weapon_smg1, CWeaponSMG1 );
-PRECACHE_WEAPON_REGISTER(weapon_smg1);
+LINK_ENTITY_TO_CLASS( weapon_gl, CWeaponGL );
+PRECACHE_WEAPON_REGISTER(weapon_gl);
 
-BEGIN_DATADESC( CWeaponSMG1 )
+BEGIN_DATADESC( CWeaponGL )
 
 	DEFINE_FIELD( m_vecTossVelocity, FIELD_VECTOR ),
 	DEFINE_FIELD( m_flNextGrenadeCheck, FIELD_TIME ),
 
 END_DATADESC()
 
-acttable_t	CWeaponSMG1::m_acttable[] = 
+acttable_t	CWeaponGL::m_acttable[] = 
 {
 	{ ACT_RANGE_ATTACK1,			ACT_RANGE_ATTACK_SMG1,			true },
 	{ ACT_RELOAD,					ACT_RELOAD_SMG1,				true },
@@ -167,23 +161,23 @@ acttable_t	CWeaponSMG1::m_acttable[] =
 #endif
 };
 
-IMPLEMENT_ACTTABLE(CWeaponSMG1);
+IMPLEMENT_ACTTABLE(CWeaponGL);
 
 #ifdef MAPBASE
 // Allows Weapon_BackupActivity() to access the SMG1's activity table.
-acttable_t *GetSMG1Acttable()
+acttable_t *GetGLActtable()
 {
-	return CWeaponSMG1::m_acttable;
+	return CWeaponGL::m_acttable;
 }
 
-int GetSMG1ActtableCount()
+int GetGLActtableCount()
 {
-	return ARRAYSIZE(CWeaponSMG1::m_acttable);
+	return ARRAYSIZE(CWeaponGL::m_acttable);
 }
 #endif
 
 //=========================================================
-CWeaponSMG1::CWeaponSMG1( )
+CWeaponGL::CWeaponGL( )
 {
 	m_fMinRange1		= 0;// No minimum range. 
 	m_fMaxRange1		= 1400;
@@ -194,10 +188,9 @@ CWeaponSMG1::CWeaponSMG1( )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CWeaponSMG1::Precache( void )
+void CWeaponGL::Precache( void )
 {
-	UTIL_PrecacheOther("grenade_ar2");
-	UTIL_PrecacheOther("tyr_flechette");
+	UTIL_PrecacheOther("npc_grenade_frag");
 
 	BaseClass::Precache();
 }
@@ -205,7 +198,7 @@ void CWeaponSMG1::Precache( void )
 //-----------------------------------------------------------------------------
 // Purpose: Give this weapon longer range when wielded by an ally NPC.
 //-----------------------------------------------------------------------------
-void CWeaponSMG1::Equip( CBaseCombatCharacter *pOwner )
+void CWeaponGL::Equip( CBaseCombatCharacter *pOwner )
 {
 	if( pOwner->Classify() == CLASS_PLAYER_ALLY )
 	{
@@ -222,7 +215,7 @@ void CWeaponSMG1::Equip( CBaseCombatCharacter *pOwner )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CWeaponSMG1::FireNPCPrimaryAttack( CBaseCombatCharacter *pOperator, Vector &vecShootOrigin, Vector &vecShootDir )
+void CWeaponGL::FireNPCPrimaryAttack( CBaseCombatCharacter *pOperator, Vector &vecShootOrigin, Vector &vecShootDir )
 {
 	// FIXME: use the returned number of bullets to account for >10hz firerate
 	WeaponSoundRealtime( SINGLE_NPC );
@@ -238,7 +231,7 @@ void CWeaponSMG1::FireNPCPrimaryAttack( CBaseCombatCharacter *pOperator, Vector 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CWeaponSMG1::Operator_ForceNPCFire( CBaseCombatCharacter *pOperator, bool bSecondary )
+void CWeaponGL::Operator_ForceNPCFire( CBaseCombatCharacter *pOperator, bool bSecondary )
 {
 	// Ensure we have enough rounds in the clip
 	m_iClip1++;
@@ -257,26 +250,39 @@ float GetCurrentGravity( void );
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CWeaponSMG1::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharacter *pOperator )
+void CWeaponGL::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharacter *pOperator )
 {
 	switch( pEvent->event )
 	{
 	case EVENT_WEAPON_SMG1:
 		{
+			//Most of this code is pulled from ai_grenade
 			Vector vecShootOrigin, vecShootDir;
 			QAngle angDiscard;
+
+			Vector vecSpin;
+			vecSpin.x = random->RandomFloat(-1000.0, 1000.0);
+			vecSpin.y = random->RandomFloat(-1000.0, 1000.0);
+			vecSpin.z = random->RandomFloat(-1000.0, 1000.0);
 
 			// Support old style attachment point firing
 			if ((pEvent->options == NULL) || (pEvent->options[0] == '\0') || (!pOperator->GetAttachment(pEvent->options, vecShootOrigin, angDiscard)))
 			{
 				vecShootOrigin = pOperator->Weapon_ShootPosition();
 			}
+			// Velocity is baked, being a grenade launcher
+			Vector forward, up, vecThrow;
+
+			pOperator->GetVectors(&forward, NULL, &up);
+			vecThrow = forward * 750 + up * 175;
 
 			CAI_BaseNPC *npc = pOperator->MyNPCPointer();
 			ASSERT( npc != NULL );
 			vecShootDir = npc->GetActualShootTrajectory( vecShootOrigin );
 
-			FireNPCPrimaryAttack( pOperator, vecShootOrigin, vecShootDir );
+			Fraggrenade_Create(vecShootOrigin, vec3_angle, vecThrow, vecSpin, pOperator, sk_gl_timer.GetFloat(), true);
+			WeaponSoundRealtime(SINGLE_NPC);
+			m_iClip1 = m_iClip1 - 1;
 		}
 		break;
 
@@ -312,7 +318,8 @@ void CWeaponSMG1::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatChar
 				// adjust upward toss to compensate for gravity loss
 				vecThrow.z += (GetCurrentGravity() * 0.5) * time * 0.5;
 			}
-
+			
+			/*
 			CGrenadeAR2 *pGrenade = (CGrenadeAR2*)Create( "grenade_ar2", vecShootOrigin, vec3_angle, npc );
 			pGrenade->SetAbsVelocity( vecThrow );
 			pGrenade->SetLocalAngularVelocity( QAngle( 0, 400, 0 ) );
@@ -327,6 +334,7 @@ void CWeaponSMG1::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatChar
 			variant_t var;
 			var.SetEntity(pGrenade);
 			npc->FireNamedOutput("OnThrowGrenade", var, pGrenade, npc);
+			*/
 		}
 		break;
 #else
@@ -368,7 +376,7 @@ void CWeaponSMG1::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatChar
 // Purpose: 
 // Output : Activity
 //-----------------------------------------------------------------------------
-Activity CWeaponSMG1::GetPrimaryAttackActivity( void )
+Activity CWeaponGL::GetPrimaryAttackActivity( void )
 {
 	if ( m_nShotsFired < 2 )
 		return ACT_VM_PRIMARYATTACK;
@@ -384,7 +392,7 @@ Activity CWeaponSMG1::GetPrimaryAttackActivity( void )
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-bool CWeaponSMG1::Reload( void )
+bool CWeaponGL::Reload( void )
 {
 	bool fRet;
 	float fCacheTime = m_flNextSecondaryAttack;
@@ -406,7 +414,7 @@ bool CWeaponSMG1::Reload( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CWeaponSMG1::AddViewKick( void )
+void CWeaponGL::AddViewKick( void )
 {
 	#define	EASY_DAMPEN			0.5f
 	#define	MAX_VERTICAL_KICK	1.0f	//Degrees
@@ -422,9 +430,9 @@ void CWeaponSMG1::AddViewKick( void )
 }
 
 //-----------------------------------------------------------------------------
-// Purpose: 
+// Should do nothing
 //-----------------------------------------------------------------------------
-void CWeaponSMG1::SecondaryAttack( void )
+void CWeaponGL::SecondaryAttack( void )
 {
 	// Only the player fires this way so we can cast
 	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
@@ -463,16 +471,6 @@ void CWeaponSMG1::SecondaryAttack( void )
 	//QAngle angShoot;
 	//VectorAngles(vecSrc, angShoot);
 	QAngle angEye = pPlayer->EyeAngles();
-	CFlechette* entity = CFlechette::FlechetteCreate(pPlayer->EyePosition(), angEye, pPlayer);
-	if (entity)
-	{
-		entity->Precache();
-		DispatchSpawn(entity);
-		Vector forward;
-		pPlayer->EyeVectors(&forward);
-		forward *= 3000.0f;
-		entity->Shoot(forward, false);
-	}
 	//QAngle angles;
 	/*VectorAngles(vecThrow, angles);
 	CGrenadeAR2 *pGrenade = (CGrenadeAR2*)Create( "grenade_ar2", vecSrc, angles, pPlayer );
@@ -518,7 +516,7 @@ void CWeaponSMG1::SecondaryAttack( void )
 //			flDist - 
 // Output : int
 //-----------------------------------------------------------------------------
-int CWeaponSMG1::WeaponRangeAttack2Condition( float flDot, float flDist )
+int CWeaponGL::WeaponRangeAttack2Condition( float flDot, float flDist )
 {
 	CAI_BaseNPC *npcOwner = GetOwner()->MyNPCPointer();
 
@@ -619,7 +617,7 @@ int CWeaponSMG1::WeaponRangeAttack2Condition( float flDot, float flDist )
 }
 
 //-----------------------------------------------------------------------------
-const WeaponProficiencyInfo_t *CWeaponSMG1::GetProficiencyValues()
+const WeaponProficiencyInfo_t *CWeaponGL::GetProficiencyValues()
 {
 	static WeaponProficiencyInfo_t proficiencyTable[] =
 	{

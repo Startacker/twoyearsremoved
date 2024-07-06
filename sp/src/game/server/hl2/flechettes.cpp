@@ -34,6 +34,7 @@ ConVar flechette_speed("flechette_speed", "2000");
 ConVar sk_flechette_dmg("sk_flechette_dmg", "4.0");
 ConVar sk_flechette_explode_dmg("sk_flechette_explode_dmg", "75.0");
 ConVar sk_flechette_explode_radius("sk_flechette_explode_radius", "128.0");
+ConVar sk_flechette_stuck_explode_radius("sk_flechette_stuck_explode_radius", "196.0");
 ConVar flechette_explode_delay("flechette_explode_delay", "1.0");
 ConVar flechette_delay("flechette_delay", "0.1");
 ConVar flechette_cheap_explosions("flechette_cheap_explosions", "1");
@@ -55,6 +56,7 @@ DEFINE_ENTITYFUNC(FlechetteTouch),
 DEFINE_FIELD(m_vecDir, FIELD_VECTOR),
 DEFINE_FIELD(m_vecShootPosition, FIELD_POSITION_VECTOR),
 DEFINE_FIELD(m_hSeekTarget, FIELD_EHANDLE),
+DEFINE_FIELD(m_stuckEnemy, FIELD_BOOLEAN),
 
 END_DATADESC()
 
@@ -201,6 +203,7 @@ void CFlechette::Precache()
 	PrecacheParticleSystem("hunter_flechette_trail_striderbuster");
 	PrecacheParticleSystem("hunter_flechette_trail");
 	PrecacheParticleSystem("hunter_projectile_explosion_1");
+	PrecacheParticleSystem("hunter_projectile_explosion_3");
 }
 
 void CFlechette::StickTo(CBaseEntity* pOther, trace_t& tr)
@@ -385,8 +388,14 @@ void CFlechette::FlechetteTouch(CBaseEntity* pOther)
 				//DispatchEffect( "BoltImpact", data );
 			}
 		}
-
-		if (((pOther->GetMoveType() == MOVETYPE_VPHYSICS) || (pOther->GetMoveType() == MOVETYPE_PUSH)) && ((pOther->GetHealth() > 0) || (pOther->m_takedamage == DAMAGE_EVENTS_ONLY)))
+		if (pOther->IsNPC())
+		{
+			// We hit an enemy, stick to them!
+			StickTo(pOther, tr);
+			// Set up our larger explosion!
+			m_stuckEnemy = true;
+		}
+		else if (((pOther->GetMoveType() == MOVETYPE_VPHYSICS) || (pOther->GetMoveType() == MOVETYPE_PUSH)) && ((pOther->GetHealth() > 0) || (pOther->m_takedamage == DAMAGE_EVENTS_ONLY)))
 		{
 			CPhysicsProp* pProp = dynamic_cast<CPhysicsProp*>(pOther);
 			if (pProp)
@@ -397,11 +406,7 @@ void CFlechette::FlechetteTouch(CBaseEntity* pOther)
 			// We hit a physics object that survived the impact. Stick to it.
 			StickTo(pOther, tr);
 		}
-		else if (pOther->IsNPC())
-		{
-			// We hit an enemy, stick to them!
-			StickTo(pOther, tr);
-		}
+		
 		else
 		{
 			SetTouch(NULL);
@@ -518,7 +523,18 @@ void CFlechette::Explode()
 	// Move the explosion effect to the tip to reduce intersection with the world.
 	Vector vecFuse;
 	GetAttachment(s_TYRFlechetteFuseAttach, vecFuse);
-	DispatchParticleEffect("hunter_projectile_explosion_1", vecFuse, GetAbsAngles(), NULL);
+	
+	float explosionRadius;
+	if (m_stuckEnemy == true)
+	{
+		explosionRadius = sk_flechette_stuck_explode_radius.GetFloat();
+		DispatchParticleEffect("hunter_projectile_explosion_3", vecFuse, GetAbsAngles(), NULL);
+	}
+	else
+	{
+		explosionRadius = sk_flechette_explode_radius.GetFloat();
+		DispatchParticleEffect("hunter_projectile_explosion_1", vecFuse, GetAbsAngles(), NULL);
+	}
 
 	int nDamageType = DMG_DISSOLVE;
 
@@ -531,7 +547,7 @@ void CFlechette::Explode()
 		nDamageType |= DMG_PREVENT_PHYSICS_FORCE;
 	}
 
-	RadiusDamage(CTakeDamageInfo(this, GetOwnerEntity(), sk_flechette_explode_dmg.GetFloat(), nDamageType), GetAbsOrigin(), sk_flechette_explode_radius.GetFloat(), CLASS_NONE, NULL);
+	RadiusDamage(CTakeDamageInfo(this, GetOwnerEntity(), sk_flechette_explode_dmg.GetFloat(), nDamageType), GetAbsOrigin(), explosionRadius, CLASS_NONE, NULL);
 
 	AddEffects(EF_NODRAW);
 

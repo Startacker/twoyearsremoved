@@ -32,7 +32,7 @@ protected:
 	virtual void	Paint();
 
 private:
-	CPanelAnimationVar( Color, m_AuxPowerColor, "AuxPowerColor", "255 0 0 255" );
+	CPanelAnimationVar( Color, m_AuxPowerColor, "AuxPowerColor", "255 255 255 255" );
 	CPanelAnimationVar( int, m_iAuxPowerDisabledAlpha, "AuxPowerDisabledAlpha", "70" );
 
 	CPanelAnimationVarAliasType( float, m_flBarInsetX, "BarInsetX", "8", "proportional_float" );

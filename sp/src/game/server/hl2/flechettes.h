@@ -67,6 +67,7 @@ protected:
 	Vector m_vecShootPosition;
 	Vector	m_vecDir;
 	EHANDLE m_hSeekTarget;
+	bool m_stuckEnemy;
 
 	DECLARE_DATADESC();
 	//DECLARE_SERVERCLASS();

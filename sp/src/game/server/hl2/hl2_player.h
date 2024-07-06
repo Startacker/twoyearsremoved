@@ -220,6 +220,8 @@ public:
 	void StartAutoSprint( void );
 	void StartSprinting( void );
 	void StopSprinting( void );
+	void Dash(void);
+	void StopDash(void);
 	void InitSprinting( void );
 	bool IsSprinting( void ) { return m_fIsSprinting; }
 	bool CanSprint( void );
@@ -439,6 +441,8 @@ private:
 	EHANDLE				m_hLocatorTargetEntity; // The entity that's being tracked by the suit locator.
 
 	float				m_flTimeNextLadderHint;	// Next time we're eligible to display a HUD hint about a ladder.
+
+	float				m_flDashTime;
 	
 	friend class CHL2GameMovement;
 
