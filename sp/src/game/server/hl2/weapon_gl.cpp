@@ -64,6 +64,7 @@ protected:
 	Vector	m_vecTossVelocity;
 	float	m_flNextGrenadeCheck;
 	COutputEHANDLE	m_OnThrowGrenade;
+	float	m_timeSinceLastGrenade;
 };
 
 IMPLEMENT_SERVERCLASS_ST(CWeaponGL, DT_WeaponGL)
@@ -256,6 +257,9 @@ void CWeaponGL::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharac
 	{
 	case EVENT_WEAPON_SMG1:
 		{
+		//Aboslutely no firing a grenade before our rate of fire reset
+		if (m_timeSinceLastGrenade > gpGlobals->curtime)
+			return;
 			//Most of this code is pulled from ai_grenade
 			Vector vecShootOrigin, vecShootDir;
 			QAngle angDiscard;
@@ -265,16 +269,14 @@ void CWeaponGL::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharac
 			vecSpin.y = random->RandomFloat(-1000.0, 1000.0);
 			vecSpin.z = random->RandomFloat(-1000.0, 1000.0);
 
-			// Support old style attachment point firing
-			if ((pEvent->options == NULL) || (pEvent->options[0] == '\0') || (!pOperator->GetAttachment(pEvent->options, vecShootOrigin, angDiscard)))
-			{
-				vecShootOrigin = pOperator->Weapon_ShootPosition();
-			}
-			// Velocity is baked, being a grenade launcher
-			Vector forward, up, vecThrow;
+			
+			vecShootOrigin = pOperator->Weapon_ShootPosition();
 
-			pOperator->GetVectors(&forward, NULL, &up);
-			vecThrow = forward * 750 + up * 175;
+			// Velocity is baked, being a grenade launcher
+			Vector forward, horz, up, vecThrow;
+
+			pOperator->GetVectors(&forward, &horz, &up);
+			vecThrow = forward * 750 + horz + up * 175;
 
 			CAI_BaseNPC *npc = pOperator->MyNPCPointer();
 			ASSERT( npc != NULL );
@@ -283,6 +285,7 @@ void CWeaponGL::Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharac
 			Fraggrenade_Create(vecShootOrigin, vec3_angle, vecThrow, vecSpin, pOperator, sk_gl_timer.GetFloat(), true);
 			WeaponSoundRealtime(SINGLE_NPC);
 			m_iClip1 = m_iClip1 - 1;
+			m_timeSinceLastGrenade = gpGlobals->curtime + 1;
 		}
 		break;
 

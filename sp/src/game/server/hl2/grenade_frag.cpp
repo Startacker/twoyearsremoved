@@ -393,10 +393,14 @@ void CGrenadeFrag::SetVelocity( const Vector &velocity, const AngularImpulse &an
 int CGrenadeFrag::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 {
 	// Manually apply vphysics because BaseCombatCharacter takedamage doesn't call back to CBaseEntity OnTakeDamage
-	VPhysicsTakeDamage( inputInfo );
+	// We don't apply physics from other explosions, in order to not throw off grenades from the Grenade Launcher
+	if (!(inputInfo.GetDamageType() & DMG_BLAST))
+	{
+		VPhysicsTakeDamage(inputInfo);
+	}
 
 	// Grenades only suffer blast damage and burn damage.
-	if( !(inputInfo.GetDamageType() & (DMG_BLAST|DMG_BURN) ) )
+	if( !(inputInfo.GetDamageType() & (DMG_BURN) ) )
 		return 0;
 
 	return BaseClass::OnTakeDamage( inputInfo );

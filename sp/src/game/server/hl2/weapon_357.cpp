@@ -5,6 +5,10 @@
 // $NoKeywords: $
 //=============================================================================//
 
+// DEPRECTATED
+// USE WEAPON_RAILGUN INSTEAD
+// DEPRECATED
+
 #include "cbase.h"
 #include "npcevent.h"
 #include "basehlcombatweapon.h"
@@ -40,6 +44,7 @@ public:
 	CWeapon357( void );
 
 	void	PrimaryAttack( void );
+	void	SecondaryAttack( void );
 	void	Operator_HandleAnimEvent( animevent_t *pEvent, CBaseCombatCharacter *pOperator );
 
 	float	WeaponAutoAimScale()	{ return 0.6f; }
@@ -379,14 +384,18 @@ void CWeapon357::PrimaryAttack( void )
 
 	pPlayer->SetMuzzleFlashTime( gpGlobals->curtime + 0.5 );
 
+	// View effects
+	color32 white = { 255, 255, 255, 64 };
+	UTIL_ScreenFade(pPlayer, white, 0.1, 0, FFADE_IN);
+
 	//Disorient the player
-	QAngle angles = pPlayer->GetLocalAngles();
+	//QAngle angles = pPlayer->GetLocalAngles();
 
-	angles.x += random->RandomInt( -1, 1 );
-	angles.y += random->RandomInt( -1, 1 );
-	angles.z = 0;
+	//angles.x += random->RandomInt( -1, 1 );
+	//angles.y += random->RandomInt( -1, 1 );
+	//angles.z = 0;
 
-	pPlayer->SnapEyeAngles( angles );
+	//pPlayer->SnapEyeAngles( angles );
 
 	pPlayer->ViewPunch( QAngle( -8, random->RandomFloat( -2, 2 ), 0 ) );
 
