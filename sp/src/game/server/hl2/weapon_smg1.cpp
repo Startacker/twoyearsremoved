@@ -199,6 +199,11 @@ void CWeaponSMG1::Precache( void )
 	UTIL_PrecacheOther("grenade_ar2");
 	UTIL_PrecacheOther("tyr_flechette");
 
+	PrecacheScriptSound("Weapon_SMG.Reload1");
+	PrecacheScriptSound("Weapon_SMG.Reload2");
+	PrecacheScriptSound("Weapon_SMG.Reload3");
+	PrecacheScriptSound("Weapon_SMG.Bolt");
+
 	BaseClass::Precache();
 }
 
@@ -498,7 +503,7 @@ void CWeaponSMG1::SecondaryAttack( void )
 	//pPlayer->RemoveAmmo( 1, m_iSecondaryAmmoType );
 
 	// Can shoot again immediately
-	m_flNextPrimaryAttack = gpGlobals->curtime + 0.5f;
+	m_flNextPrimaryAttack = gpGlobals->curtime + 1.0f;
 
 	// Can blow up after a short delay (so have time to release mouse button)
 	m_flNextSecondaryAttack = gpGlobals->curtime + 1.0f;

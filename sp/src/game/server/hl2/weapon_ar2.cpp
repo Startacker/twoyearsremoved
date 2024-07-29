@@ -224,6 +224,10 @@ void CWeaponAR2::Precache( void )
 {
 	BaseClass::Precache();
 
+	PrecacheScriptSound("Weapon_AR2.Reload1");
+	PrecacheScriptSound("Weapon_AR2.Reload2");
+	PrecacheScriptSound("Weapon_AR2.Bolt");
+
 	UTIL_PrecacheOther( "prop_combine_ball" );
 	UTIL_PrecacheOther( "env_entity_dissolver" );
 	PrecacheParticleSystem("piercer_tracer");
@@ -483,7 +487,7 @@ void CWeaponAR2::SecondaryAttack( void )
 	}
 
 	m_bShotDelayed = true;
-	m_flNextPrimaryAttack = m_flNextSecondaryAttack = m_flDelayedFire = gpGlobals->curtime + 0.5f;
+	m_flNextPrimaryAttack = m_flNextSecondaryAttack = m_flDelayedFire = gpGlobals->curtime;
 
 	CBasePlayer *pPlayer = ToBasePlayer( GetOwner() );
 	if( pPlayer )

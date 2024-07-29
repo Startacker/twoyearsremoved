@@ -58,6 +58,7 @@ public:
 	Disposition_t IRelationType(CBaseEntity *pTarget);
 	float		MaxYawSpeed( void );
 	void		HandleAnimEvent( animevent_t *pEvent );
+	void		SetMaxHacks(void);
 	Activity NPC_TranslateActivity( Activity newActivity );
 #ifdef MAPBASE
 	Activity Weapon_TranslateActivity( Activity baseAct, bool *pRequired );
@@ -470,6 +471,8 @@ private:
 
 	int				m_iPistolClips;		// How many clips the cop has in reserve
 	int				m_iManhacks;		// How many manhacks the cop has
+	int				m_iActiveManhacks;	// How many manhacks are active from the unit
+	int				m_iMaxManhacks;		// How many manhacks can be active at once from the unit
 	bool			m_fWeaponDrawn;		// Is my weapon drawn? (ready to use)
 	bool			m_bSimpleCops;		// The easy version of the cops
 	int				m_LastShootSlot;

@@ -37,7 +37,8 @@ DEFINE_FIELD(m_bShotDelayed, FIELD_BOOLEAN),
 END_DATADESC()
 #endif // MAPBASE
 
-#define BLUDGEON_HULL_DIM		16
+//Just a liiitle increased for TYR (16 to 28)
+#define BLUDGEON_HULL_DIM		28
 
 static const Vector g_bludgeonMins(-BLUDGEON_HULL_DIM,-BLUDGEON_HULL_DIM,-BLUDGEON_HULL_DIM);
 static const Vector g_bludgeonMaxs(BLUDGEON_HULL_DIM,BLUDGEON_HULL_DIM,BLUDGEON_HULL_DIM);
@@ -60,8 +61,8 @@ void CBaseHLBludgeonWeapon::Spawn( void )
 {
 	m_fMinRange1	= 0;
 	m_fMinRange2	= 0;
-	m_fMaxRange1	= 64;
-	m_fMaxRange2	= 64;
+	m_fMaxRange1	= 86;
+	m_fMaxRange2	= 86;
 	//Call base class first
 	BaseClass::Spawn();
 }
@@ -197,7 +198,7 @@ void CBaseHLBludgeonWeapon::Hit( trace_t &traceHit, Activity nHitActivity, bool 
 			Resupply();
 		}
 
-		CalculateMeleeDamageForce( &info, hitDirection, traceHit.endpos );
+		CalculateMeleeDamageForce( &info, hitDirection, traceHit.endpos, 2.0 );
 
 		pHitEntity->DispatchTraceAttack( info, hitDirection, &traceHit ); 
 		ApplyMultiDamage();
@@ -302,6 +303,12 @@ void CBaseHLBludgeonWeapon::Resupply()
 		pPlayer->RemoveAmmo(ammoFill, 7);
 		pPlayer->Weapon_GetWpnForAmmo(7)->m_iClip1 += ammoFill;
 
+	}
+	//Check for Railgun ammo
+	if (pPlayer->Weapon_GetWpnForAmmo(5))
+	{
+		pPlayer->GiveAmmo(1, 5, true);
+		pPlayer->Weapon_GetWpnForAmmo(5)->FinishReload();
 	}
 
 	WeaponSound(SPECIAL1);

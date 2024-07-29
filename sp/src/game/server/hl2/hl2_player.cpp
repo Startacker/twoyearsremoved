@@ -46,6 +46,7 @@
 #include "gamestats.h"
 #include "filters.h"
 #include "tier0/icommandline.h"
+#include "mapbase/GlobalStrings.h"
 
 #ifdef HL2_EPISODIC
 #include "npc_alyx_episodic.h"
@@ -89,7 +90,7 @@ extern int gEvilImpulse101;
 ConVar sv_autojump( "sv_autojump", "0" );
 
 ConVar hl2_walkspeed( "hl2_walkspeed", "150" );
-ConVar hl2_normspeed( "hl2_normspeed", "190" );
+ConVar hl2_normspeed( "hl2_normspeed", "250" );
 ConVar hl2_sprintspeed( "hl2_sprintspeed", "320" );
 
 ConVar hl2_darkness_flashlight_factor ( "hl2_darkness_flashlight_factor", "1" );
@@ -116,8 +117,17 @@ ConVar autoaim_unlock_target( "autoaim_unlock_target", "0.8666" );
 
 ConVar sv_stickysprint("sv_stickysprint", "0", FCVAR_ARCHIVE | FCVAR_ARCHIVE_XBOX);
 
+ConVar sv_regenshield("sv_regenshield", "1", FCVAR_REPLICATED );
+ConVar sv_regenshield_delay("sv_regenshield_delay", "5", FCVAR_REPLICATED | FCVAR_CHEAT);
+ConVar sv_regenshield_rate("sv_regenshield_rate", "0.1", FCVAR_REPLICATED | FCVAR_CHEAT);
+ConVar sv_regenshield_max("sv_regenshield_max", "10", FCVAR_REPLICATED | FCVAR_CHEAT);
+ConVar sv_regenshield_max_upgraded("sv_regenshield_max_upgraded", "25", FCVAR_REPLICATED | FCVAR_CHEAT);
+
+int m_MaxArmor;
+bool m_NeedRegen = false;
+
 #ifdef MAPBASE
-ConVar player_autoswitch_enabled( "player_autoswitch_enabled", "1", FCVAR_NONE, "This convar was added by Mapbase to toggle whether players automatically switch to their ''best'' weapon upon picking up ammo for it after it was dry." );
+ConVar player_autoswitch_enabled( "player_autoswitch_enabled", "0", FCVAR_NONE, "This convar was added by Mapbase to toggle whether players automatically switch to their ''best'' weapon upon picking up ammo for it after it was dry." );
 
 #ifdef SP_ANIM_STATE
 ConVar hl2_use_sp_animstate( "hl2_use_sp_animstate", "1", FCVAR_NONE, "Allows SP HL2 players to use HL2:DM animations for custom player models. (changes may not apply until model is reloaded)" );
@@ -283,7 +293,7 @@ public:
 	// Hope there wouldn't be enough time for this to need to be saved...
 	CUtlDict<string_t, int> m_QueuedKV;
 
-	int m_MaxArmor = 100;
+	int m_MaxArmor;
 	int m_SuitZoomFOV = 25;
 #endif
 
@@ -548,8 +558,11 @@ BEGIN_DATADESC( CHL2_Player )
 	DEFINE_FIELD( m_flIdleTime, FIELD_TIME ),
 	DEFINE_FIELD( m_flMoveTime, FIELD_TIME ),
 	DEFINE_FIELD( m_flLastDamageTime, FIELD_TIME ),
+	DEFINE_FIELD( m_flLastArmorRegenTime, FIELD_TIME),
 	DEFINE_FIELD( m_flTargetFindTime, FIELD_TIME ),
 	DEFINE_FIELD( m_flDashTime, FIELD_TIME),
+	DEFINE_FIELD( m_flDashing, FIELD_BOOLEAN),
+	DEFINE_FIELD( m_flToggleDash, FIELD_BOOLEAN),
 
 	DEFINE_FIELD( m_flAdmireGlovesAnimTime, FIELD_TIME ),
 	DEFINE_FIELD( m_flNextFlashlightCheckTime, FIELD_TIME ),
@@ -811,6 +824,14 @@ void CHL2_Player::HandleArmorReduction( void )
 	int iArmor = Lerp( flPercent, m_iArmorReductionFrom, 0 );
 
 	SetArmorValue( iArmor );
+}
+
+void CHL2_Player::GetMaxArmor(void)
+{
+	if (GlobalEntity_GetState("shield_upgraded") == GLOBAL_ON)
+		m_MaxArmor = sv_regenshield_max_upgraded.GetInt();
+	else
+		m_MaxArmor = sv_regenshield_max.GetInt();
 }
 
 //-----------------------------------------------------------------------------
@@ -1150,7 +1171,7 @@ void CHL2_Player::PreThink(void)
 			m_nButtons &= ~(IN_ATTACK|IN_ATTACK2);
 		}
 	}
-	//StopDash();
+	StopDash();
 }
 
 void CHL2_Player::PostThink( void )
@@ -1171,6 +1192,19 @@ void CHL2_Player::PostThink( void )
 		m_flAnimRenderYaw.Set( m_pPlayerAnimState->GetRenderAngles().y );
 	}
 #endif
+	if ((IsAlive()) && (ArmorValue() < m_MaxArmor) && (sv_regenshield.GetInt() == 1) && (m_NeedRegen == true))
+	{
+		if (gpGlobals->curtime > m_flLastDamageTime + sv_regenshield_delay.GetFloat())
+		{
+			if (gpGlobals->curtime > m_flLastArmorRegenTime + sv_regenshield_rate.GetFloat())
+			{
+				IncrementArmorValue(1);
+				m_flLastArmorRegenTime = gpGlobals->curtime;
+				if (ArmorValue() == m_MaxArmor)
+					m_NeedRegen = false;
+			}
+		}
+	}
 }
 
 void CHL2_Player::StartAdmireGlovesAnimation( void )
@@ -1532,6 +1566,10 @@ void CHL2_Player::Spawn(void)
 
 	SuitPower_SetCharge( 100 );
 
+	GetMaxArmor();
+	SetArmorValue(m_MaxArmor);
+	m_flLastArmorRegenTime = gpGlobals->curtime;
+
 	m_Local.m_iHideHUD |= HIDEHUD_CHAT;
 
 	m_pPlayerAISquad = g_AI_SquadManager.FindCreateSquad(AllocPooledString(PLAYER_SQUADNAME));
@@ -1598,7 +1636,6 @@ void CHL2_Player::StartAutoSprint()
 //-----------------------------------------------------------------------------
 void CHL2_Player::Dash(void)
 {
-	/*
 	if (m_flDashTime > gpGlobals->curtime)
 		return;
 	//If you don't have enough power, no dashing
@@ -1616,53 +1653,70 @@ void CHL2_Player::Dash(void)
 	CPASAttenuationFilter filter(this);
 	filter.UsePredictionRules();
 	EmitSound(filter, entindex(), "HL2Player.SprintStart");
-	
-	int forward;
-	int horz;
-	int up;
 
-	if (m_afButtonPressed & IN_BACK)
+	DevMsg("The player is standing on: %s\n", GetGroundEntity());
+	// Enter a ducked state if we're in the air, for crouch jump collision
+	if (GetGroundEntity() == NULL && m_flToggleDash == false)
 	{
-		forward = -2;
+		DevMsg("Entering duck state\n");
+		ToggleDuck();
+		m_flToggleDash = true;
 	}
-	else if (m_afButtonPressed & IN_FORWARD)
-	{
-		forward = 2;
-	}
-	else if (m_afButtonPressed & IN_MOVELEFT)
-	{
-		horz = -2;
-	}
-	else if (m_afButtonPressed & IN_MOVERIGHT)
-	{
-		horz = 2;
-	}
-	//Always set Z momentum to 0
-	up = 0;
-	ApplyAbsVelocityImpulse(Vector(forward, horz, up));
 
-	m_flDashTime = gpGlobals->curtime + 0.15;
-	*/
+	//Get the player's angle vectors
+	Vector forward, horz;
+	GetVectors(&forward, &horz, NULL);
+	AngleVectors(GetLocalAngles(), &forward, &horz, NULL);
+
+	Vector xVel;
+	Vector yVel;
+	if (m_nButtons & IN_BACK)
+	{
+		xVel = forward * -900;
+	}
+	else if (m_nButtons & IN_FORWARD)
+	{
+		xVel = forward * 900;
+	}
+	if (m_nButtons & IN_MOVELEFT)
+	{
+		yVel = horz * -900;
+	}
+	else if (m_nButtons & IN_MOVERIGHT)
+	{
+		yVel = horz * 900;
+	}
+	if (!(m_nButtons & IN_BACK) && !(m_nButtons & IN_FORWARD) && !(m_nButtons & IN_MOVELEFT) && !(m_nButtons & IN_MOVERIGHT))
+	{
+		//We aren't holding anything down, so let's move forward!
+		xVel = forward * 900;
+	}
+	//Reset velocity
+	SetAbsVelocity(Vector(0, 0, 0));
+
+	//And set our new velocity
+	SetBaseVelocity(xVel + yVel);
+
+	m_flDashTime = gpGlobals->curtime + 0.25;
+	m_flDashing = true;
 }
 
 void CHL2_Player::StopDash(void)
 {
-	if (m_flDashTime == gpGlobals->curtime)
+	if ((m_flDashTime <= gpGlobals->curtime) && (m_flDashing == true))
 	{
 		Vector flSpeed = GetAbsVelocity();
-		Vector flKillSpeed;
+		Vector flVel = flSpeed * 0.3;
 
-		//Are we moving faster than necessary?
-		if (flSpeed.x > 800)
+		SetAbsVelocity(flVel);
+		m_flDashing = false;
+
+		if (m_flToggleDash == true)
 		{
-			flKillSpeed.x = flSpeed.x * 0.3;
+			ToggleDuck();
+			m_flToggleDash = false;
+			DevMsg("Exiting duck state\n");
 		}
-		if (flSpeed.y > 800)
-		{
-			flKillSpeed.y = flSpeed.y * 0.3;
-		}
-		flKillSpeed.z = 0;
-		SetAbsVelocity(flKillSpeed);
 	}
 }
 
@@ -3038,6 +3092,8 @@ int	CHL2_Player::OnTakeDamage( const CTakeDamageInfo &info )
 	}
 
 	gamestats->Event_PlayerDamage( this, info );
+	GetMaxArmor();
+	m_NeedRegen = true;
 
 #ifdef MAPBASE
 	FirePlayerProxyOutput("PlayerDamaged", variant_t(), info.GetAttacker(), this);

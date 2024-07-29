@@ -250,6 +250,12 @@ int GetShotgunActtableCount()
 void CWeaponShotgun::Precache( void )
 {
 	CBaseCombatWeapon::Precache();
+
+	PrecacheScriptSound("Weapon_Shotgun.BoltForward");
+	PrecacheScriptSound("Weapon_Shotgun.BoltBack");
+	PrecacheScriptSound("Weapon_Shotgun.Slap");
+
+
 }
 
 //-----------------------------------------------------------------------------

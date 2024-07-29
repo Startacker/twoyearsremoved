@@ -123,6 +123,10 @@ ConVar	metropolice_chase_use_follow( "metropolice_chase_use_follow", "0" );
 ConVar  metropolice_move_and_melee("metropolice_move_and_melee", "1" );
 ConVar  metropolice_charge("metropolice_charge", "1" );
 
+ConVar	sk_metropolice_maxhacks_easy("sk_metropolice_maxhacks_easy", "1");
+ConVar	sk_metropolice_maxhacks_normal("sk_metropolice_maxhacks_normal", "3");
+ConVar	sk_metropolice_maxhacks_hard("sk_metropolice_maxhacks_hard", "6");
+
 #ifdef MAPBASE
 ConVar	metropolice_new_component_behavior("metropolice_new_component_behavior", "1");
 #endif
@@ -234,6 +238,8 @@ BEGIN_DATADESC( CNPC_MetroPolice )
 	//								m_FollowBehavior (auto saved by AI)
 
 	DEFINE_KEYFIELD( m_iManhacks, FIELD_INTEGER, "manhacks" ),
+	DEFINE_KEYFIELD( m_iActiveManhacks, FIELD_INTEGER, "activemanhacks"),
+	DEFINE_KEYFIELD( m_iMaxManhacks, FIELD_INTEGER, "maxmanhacks"),
 	DEFINE_INPUTFUNC( FIELD_VOID, "EnableManhackToss", InputEnableManhackToss ),
 #ifdef MAPBASE
 	DEFINE_INPUTFUNC( FIELD_VOID, "DisableManhackToss", InputDisableManhackToss ),
@@ -485,6 +491,7 @@ void CNPC_MetroPolice::NotifyDeadFriend( CBaseEntity* pFriend )
 #endif
 		DevMsg("My manhack died!\n");
 		m_hManhack = NULL;
+		m_iActiveManhacks--;
 		return;
 	}
 
@@ -676,6 +683,22 @@ bool CNPC_MetroPolice::CreateComponents()
 	return true;
 }
 
+void CNPC_MetroPolice::SetMaxHacks(void)
+{
+	if (g_pGameRules->IsSkillLevel(SKILL_EASY))
+	{
+		m_iMaxManhacks = sk_metropolice_maxhacks_easy.GetInt(); //1
+	}
+	else if (g_pGameRules->IsSkillLevel(SKILL_HARD))
+	{
+		m_iMaxManhacks = sk_metropolice_maxhacks_hard.GetInt(); //6
+	}
+	else
+	{
+		m_iMaxManhacks = sk_metropolice_maxhacks_normal.GetInt(); //3
+	}
+}
+
 
 //-----------------------------------------------------------------------------
 // Purpose: 
@@ -702,6 +725,7 @@ void CNPC_MetroPolice::Spawn( void )
 	SetBloodColor( BLOOD_COLOR_RED );
 	m_nIdleChatterType = METROPOLICE_CHATTER_ASK_QUESTION; 
 	m_bSimpleCops = HasSpawnFlags( SF_METROPOLICE_SIMPLE_VERSION );
+	SetMaxHacks();
 	if ( HasSpawnFlags( SF_METROPOLICE_NOCHATTER ) )
 	{
 		AddSpawnFlags( SF_NPC_GAG );
@@ -3276,6 +3300,7 @@ void CNPC_MetroPolice::OnAnimEventStartDeployManhack( void )
 	}
 
 	m_iManhacks--;
+	m_iActiveManhacks++;
 
 	// Turn off the manhack on our body
 	if ( m_iManhacks <= 0 )
@@ -3827,7 +3852,7 @@ int CNPC_MetroPolice::SelectScheduleNewEnemy()
 	{
 		m_flNextLedgeCheckTime = gpGlobals->curtime;
 
-		if( CanDeployManhack() && OccupyStrategySlot( SQUAD_SLOT_POLICE_DEPLOY_MANHACK ) )
+		if( CanDeployManhack() && OccupyStrategySlot( SQUAD_SLOT_POLICE_DEPLOY_MANHACK ))
 			return SCHED_METROPOLICE_DEPLOY_MANHACK;
 	}
 
@@ -5808,6 +5833,10 @@ bool CNPC_MetroPolice::CanDeployManhack( void )
 
 	// Nope, don't have any!
 	if( m_iManhacks < 1 )
+		return false;
+
+	// Nope, already at the max!
+	if (m_iActiveManhacks >= m_iMaxManhacks)
 		return false;
 
 	return true;

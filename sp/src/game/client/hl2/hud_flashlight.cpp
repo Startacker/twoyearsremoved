@@ -104,6 +104,7 @@ void CHudFlashlight::SetFlashlightState( bool flashlightOn )
 //-----------------------------------------------------------------------------
 void CHudFlashlight::Paint()
 {
+	/*
 #ifdef HL2_EPISODIC
 	C_BaseHLPlayer *pPlayer = (C_BaseHLPlayer *)C_BasePlayer::GetLocalPlayer();
 	if ( !pPlayer )
@@ -159,4 +160,5 @@ void CHudFlashlight::Paint()
 		xpos += (m_flBarChunkWidth + m_flBarChunkGap);
 	}
 #endif // HL2_EPISODIC
+*/
 }

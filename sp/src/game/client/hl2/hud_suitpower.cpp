@@ -159,7 +159,7 @@ void CHudSuitPower::Paint()
 
 	// see if we've changed power state
 	int lowPower = 0;
-	if (enabledChunks <= (chunkCount / 4))
+	if (m_flSuitPower < 40)
 	{
 		lowPower = 1;
 	}

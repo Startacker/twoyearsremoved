@@ -109,6 +109,7 @@ public:
 
 	void			Precache(void);
 	void			RunTask( const Task_t *pTask );
+	void			SetBurstSize(void);
 	void			Spawn(void);
 	void			Activate();
 	void			StartTask( const Task_t *pTask );

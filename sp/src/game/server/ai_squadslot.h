@@ -30,6 +30,14 @@ enum SQUAD_SLOT_t {
 	SQUAD_SLOT_ATTACK1 = 0,		// reserve 2 attack slots for most squads
 	SQUAD_SLOT_ATTACK2,
 	SQUAD_SLOT_ATTACK3,			// reserved for Grenadiers, they MUST be able to attack to be effective!
+	SQUAD_SLOT_ATTACK4,
+	SQUAD_SLOT_ATTACK5,
+	SQUAD_SLOT_ATTACK6,
+	SQUAD_SLOT_ATTACK7,
+	SQUAD_SLOT_ATTACK8,
+	SQUAD_SLOT_ATTACK9,
+	SQUAD_SLOT_ATTACK10,
+	SQUAD_SLOT_ATTACK11,		//4-11 are used exclusively by drone-type enemies so they don't exhaust other slots
 
 	SQUAD_SLOT_INVESTIGATE_SOUND,
 

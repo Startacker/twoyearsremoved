@@ -263,6 +263,7 @@ public:
 	void				InputTurnFlashlightOn( inputdata_t &inputdata );
 	void				InputTurnFlashlightOff( inputdata_t &inputdata );
 #endif
+	void				GetMaxArmor(void);
 
 	const impactdamagetable_t &GetPhysicsImpactDamageTable();
 	virtual int			OnTakeDamage( const CTakeDamageInfo &info );
@@ -421,6 +422,7 @@ private:
 	float				m_flIdleTime;		//Amount of time we've been motionless
 	float				m_flMoveTime;		//Amount of time we've been in motion
 	float				m_flLastDamageTime;	//Last time we took damage
+	float				m_flLastArmorRegenTime;
 	float				m_flTargetFindTime;
 
 	EHANDLE				m_hPlayerProxy;
@@ -443,6 +445,8 @@ private:
 	float				m_flTimeNextLadderHint;	// Next time we're eligible to display a HUD hint about a ladder.
 
 	float				m_flDashTime;
+	bool				m_flDashing;
+	bool				m_flToggleDash;
 	
 	friend class CHL2GameMovement;
 

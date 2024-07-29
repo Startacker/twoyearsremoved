@@ -86,6 +86,7 @@ ConVar	sk_manhack_health( "sk_manhack_health","0");
 ConVar	sk_manhack_melee_dmg( "sk_manhack_melee_dmg","0");
 ConVar	sk_manhack_v2( "sk_manhack_v2","1");
 ConVar	sk_manhack_burstsize("sk_manhack_burst_size", "3");
+ConVar	sk_manhack_burstsize_hard("sk_manhack_burst_size_hard", "6");
 
 extern void		SpawnBlood(Vector vecSpot, const Vector &vAttackDir, int bloodColor, float flDamage);
 extern float	GetFloorZ(const Vector &origin);
@@ -991,7 +992,7 @@ int CNPC_Manhack::TranslateSchedule( int scheduleType )
 			//	return SCHED_MANHACK_SWARM;
 			//}
 
-			if ( !m_bDoSwarmBehavior || OccupyStrategySlotRange( SQUAD_SLOT_ATTACK1, SQUAD_SLOT_ATTACK2 ) )
+			if (!m_bDoSwarmBehavior || OccupyStrategySlotRange(SQUAD_SLOT_ATTACK4, SQUAD_SLOT_ATTACK11))
 			{
 				return SCHED_CHASE_ENEMY;
 			}
@@ -2387,6 +2388,18 @@ void CNPC_Manhack::RunTask( const Task_t *pTask )
 	}
 }
 
+void CNPC_Manhack::SetBurstSize(void)
+{
+	if (g_pGameRules->IsSkillLevel(SKILL_HARD))
+	{
+		m_iBurstSize = sk_manhack_burstsize_hard.GetFloat(); //6 rounds
+	}
+	else
+	{
+		m_iBurstSize = sk_manhack_burstsize.GetFloat(); //3 rounds
+	}
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
@@ -2448,7 +2461,7 @@ void CNPC_Manhack::Spawn(void)
 	m_flEngineStallTime			= gpGlobals->curtime;
 	m_fForceMoveTime			= gpGlobals->curtime;
 	m_flFireTime = gpGlobals->curtime;
-	m_iBurstSize = 3;
+	
 	m_vForceMoveTarget			= vec3_origin;
 	m_fSwarmMoveTime			= gpGlobals->curtime;
 	m_vSwarmMoveTarget			= vec3_origin;
@@ -2456,6 +2469,8 @@ void CNPC_Manhack::Spawn(void)
 
 	m_fSmokeTime		= 0;
 	m_fSparkTime		= 0;
+
+	SetBurstSize();
 
 	// Set the noise mod to huge numbers right now, in case this manhack starts out waiting for a script
 	// for instance, we don't want him to bob whilst he's waiting for a script. This allows designers
@@ -2739,7 +2754,7 @@ void CNPC_Manhack::StartTask( const Task_t *pTask )
 			AISquadIter_t iter;
 			for (CAI_BaseNPC *pSquadMember = m_pSquad->GetFirstMember( &iter ); pSquadMember; pSquadMember = m_pSquad->GetNextMember( &iter ) )
 			{
-				if (pSquadMember->HasStrategySlotRange( SQUAD_SLOT_ATTACK1, SQUAD_SLOT_ATTACK2 ))
+				if (pSquadMember->HasStrategySlotRange( SQUAD_SLOT_ATTACK4, SQUAD_SLOT_ATTACK11 ))
 				{
 					m_vSavePosition += pSquadMember->GetAbsOrigin() * 10;
 					count += 10;
@@ -2777,7 +2792,7 @@ void CNPC_Manhack::StartTask( const Task_t *pTask )
 				for (pSquadMember = m_pSquad->GetFirstMember( &iter ); pSquadMember; pSquadMember = m_pSquad->GetNextMember( &iter ) )
 				{
 					// are they attacking?
-					if (pSquadMember->HasStrategySlotRange( SQUAD_SLOT_ATTACK1, SQUAD_SLOT_ATTACK2 ))
+					if (pSquadMember->HasStrategySlotRange( SQUAD_SLOT_ATTACK4, SQUAD_SLOT_ATTACK11 ))
 					{
 						m_vSavePosition = pSquadMember->GetAbsOrigin();
 						break;
@@ -3266,6 +3281,7 @@ void CNPC_Manhack::FireBullets(CBaseCombatCharacter* pOperator )
 	UTIL_TraceLine(vecAiming, vecAimingEnd, MASK_SHOT, this, COLLISION_GROUP_NONE, &tr);
 
 	UTIL_Tracer(vecSrc, tr.endpos, 0, TRACER_DONT_USE_ATTACHMENT, 8000, true, "GunshipTracer");
+
 	pOperator->FireBullets(1, vecSrc, vecAiming, VECTOR_CONE_1DEGREES, MAX_TRACE_LENGTH, 1, 0, -1, -1, 7, this, true, false);
 
 	m_iBurstSize--;
@@ -3275,7 +3291,7 @@ void CNPC_Manhack::FireBullets(CBaseCombatCharacter* pOperator )
 	{
 		//We've finished our burst
 		m_flFireTime = gpGlobals->curtime + 1.8;
-		m_iBurstSize = 3;
+		SetBurstSize();
 	}
 }
 
