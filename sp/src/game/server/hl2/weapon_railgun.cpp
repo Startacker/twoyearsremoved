@@ -485,9 +485,6 @@ void CWeaponRailgun::PrimaryAttack(void)
 		return;
 	}
 
-	m_flNextPrimaryAttack = gpGlobals->curtime + GetViewModelSequenceDuration();
-	m_flNextSecondaryAttack = gpGlobals->curtime + GetViewModelSequenceDuration();
-
 	WeaponSound(SINGLE);
 	pOwner->DoMuzzleFlash();
 	pOwner->SetMuzzleFlashTime(gpGlobals->curtime + 0.5);
@@ -502,6 +499,12 @@ void CWeaponRailgun::PrimaryAttack(void)
 	UTIL_ScreenFade(pOwner, white, 0.1, 0, FFADE_IN);
 
 	pOwner->ViewPunch(QAngle(random->RandomInt(-2, -6), random->RandomInt(1, 2), 0));
+
+	SendWeaponAnim(ACT_VM_PRIMARYATTACK);
+	pOwner->SetAnimation(PLAYER_ATTACK1);
+	SetWeaponIdleTime(gpGlobals->curtime + SequenceDuration(ACT_VM_PRIMARYATTACK));
+	m_flNextPrimaryAttack = gpGlobals->curtime + GetViewModelSequenceDuration();
+	m_flNextSecondaryAttack = gpGlobals->curtime + GetViewModelSequenceDuration();
 
 	m_iClip1--;
 	m_iPrimaryAttacks++;
@@ -734,7 +737,7 @@ void CWeaponRailgun::ItemPostFrame( void )
  
 	if ( ( pOwner->m_nButtons & IN_ATTACK ) )
 	{
-		if ( m_flNextPrimaryAttack < gpGlobals->curtime )
+		if ( m_flNextPrimaryAttack < gpGlobals->curtime && (GetActivity() != ACT_VM_RELOAD))
 		{
 			PrimaryAttack();
 		}
@@ -808,7 +811,7 @@ void CWeaponRailgun::FireHook( void )
 	//WeaponSound( SINGLE );
 	//WeaponSound( SPECIAL2 );
  
-	SendWeaponAnim( ACT_VM_PRIMARYATTACK );
+	SendWeaponAnim( ACT_VM_SECONDARYATTACK );
  
 	m_flNextPrimaryAttack = m_flNextSecondaryAttack	= gpGlobals->curtime + 0.75;
 }
