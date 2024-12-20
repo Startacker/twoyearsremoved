@@ -71,7 +71,7 @@ void CNPC_CombineS::Spawn( void )
 	}
 	else if ( IsProto() )
 	{
-		//Weaker health/
+		//Weaker health
 		SetHealth(sk_combine_proto_health.GetFloat());
 		SetMaxHealth(sk_combine_proto_health.GetFloat());
 		SetKickDamage(sk_combine_proto_kick.GetFloat());
@@ -323,6 +323,7 @@ void CNPC_CombineS::Event_Killed( const CTakeDamageInfo &info )
 
 	if ( pPlayer != NULL )
 	{
+		/*
 		// Elites drop alt-fire ammo, so long as they weren't killed by dissolving.
 		if( IsElite() )
 		{
@@ -372,6 +373,7 @@ void CNPC_CombineS::Event_Killed( const CTakeDamageInfo &info )
 
 		CHalfLife2 *pHL2GameRules = static_cast<CHalfLife2 *>(g_pGameRules);
 
+		
 		// Attempt to drop health
 		if ( pHL2GameRules->NPC_ShouldDropHealth( pPlayer ) )
 		{
@@ -387,7 +389,7 @@ void CNPC_CombineS::Event_Killed( const CTakeDamageInfo &info )
 				DropItem( "weapon_frag", WorldSpaceCenter()+RandomVector(-4,4), RandomAngle(0,360) );
 				pHL2GameRules->NPC_DroppedGrenade();
 			}
-		}
+		}*/
 	}
 
 	BaseClass::Event_Killed( info );

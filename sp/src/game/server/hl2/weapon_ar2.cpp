@@ -377,7 +377,7 @@ void CWeaponAR2::PierceShot(Vector& vecSrc, bool FirstShot )
 	if (FirstShot == true)
 	{
 		Msg("PERFORMING FIRST SHOT\n");
-		pPlayer->FireBullets(1, vecSrc, vecAiming, GetBulletSpread(), MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 0, -1, -1, 40, NULL, true, false);
+		pPlayer->FireBullets(1, vecSrc, vecAiming, vec3_origin, MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 0, -1, -1, 40, NULL, true, false);
 
 		Vector	vecAimingEnd = vecLooking + (vecAiming * MAX_TRACE_LENGTH);
 		
@@ -425,7 +425,7 @@ void CWeaponAR2::PierceShot(Vector& vecSrc, bool FirstShot )
 		trace_t tr2;
 		UTIL_ParticleTracer("piercer_tracer", vecSrc, tr2.endpos, entindex(), iAttachment, true);
 		UTIL_TraceLine(vecSrc, vecAimingEnd, MASK_SHOT, pPlayer, COLLISION_GROUP_NONE, &tr2);
-		pPlayer->FireBullets(1, vecSrc, vecAiming, GetBulletSpread(), MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 0, -1, -1, 40, NULL, true, false);
+		pPlayer->FireBullets(1, vecSrc, vecAiming, vec3_origin, MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 0, -1, -1, 40, NULL, true, false);
 
 		if (tr2.m_pEnt)
 		{

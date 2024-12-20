@@ -186,7 +186,7 @@ int GetSMG1ActtableCount()
 CWeaponSMG1::CWeaponSMG1( )
 {
 	m_fMinRange1		= 0;// No minimum range. 
-	m_fMaxRange1		= 1400;
+	m_fMaxRange1		= 500;
 
 	m_bAltFiresUnderwater = false;
 }

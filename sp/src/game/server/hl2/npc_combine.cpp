@@ -1447,49 +1447,6 @@ bool CNPC_Combine::FVisible( CBaseEntity *pEntity, int traceMask, CBaseEntity **
 //-----------------------------------------------------------------------------
 void CNPC_Combine::Event_Killed( const CTakeDamageInfo &info )
 {
-	// if I was killed before I could finish throwing my grenade, drop
-	// a grenade item that the player can retrieve.
-	if( GetActivity() == ACT_RANGE_ATTACK2 )
-	{
-		if( m_iLastAnimEventHandled != COMBINE_AE_GREN_TOSS )
-		{
-			// Drop the grenade as an item.
-			Vector vecStart;
-			GetAttachment( "lefthand", vecStart );
-
-			CBaseEntity *pItem = DropItem( "weapon_frag", vecStart, RandomAngle(0,360) );
-
-			if ( pItem )
-			{
-				IPhysicsObject *pObj = pItem->VPhysicsGetObject();
-
-				if ( pObj )
-				{
-					Vector			vel;
-					vel.x = random->RandomFloat( -100.0f, 100.0f );
-					vel.y = random->RandomFloat( -100.0f, 100.0f );
-					vel.z = random->RandomFloat( 800.0f, 1200.0f );
-					AngularImpulse	angImp	= RandomAngularImpulse( -300.0f, 300.0f );
-
-					vel[2] = 0.0f;
-					pObj->AddVelocity( &vel, &angImp );
-				}
-
-				// In the Citadel we need to dissolve this
-#ifdef MAPBASE
-				if ( PlayerHasMegaPhysCannon() && GlobalEntity_GetCounter("super_phys_gun") != 1 )
-#else
-				if ( PlayerHasMegaPhysCannon() )
-#endif
-				{
-					CBaseCombatWeapon *pWeapon = static_cast<CBaseCombatWeapon *>(pItem);
-
-					pWeapon->Dissolve( NULL, gpGlobals->curtime, false, ENTITY_DISSOLVE_NORMAL );
-				}
-			}
-		}
-	}
-
 	BaseClass::Event_Killed( info );
 }
 

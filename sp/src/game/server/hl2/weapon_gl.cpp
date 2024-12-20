@@ -180,8 +180,8 @@ int GetGLActtableCount()
 //=========================================================
 CWeaponGL::CWeaponGL( )
 {
-	m_fMinRange1		= 0;// No minimum range. 
-	m_fMaxRange1		= 1400;
+	m_fMinRange1		= 63;
+	m_fMaxRange1		= 1800;
 
 	m_bAltFiresUnderwater = false;
 }
@@ -207,7 +207,7 @@ void CWeaponGL::Equip( CBaseCombatCharacter *pOwner )
 	}
 	else
 	{
-		m_fMaxRange1 = 1400;
+		m_fMaxRange1 = 1800;
 	}
 
 	BaseClass::Equip( pOwner );
