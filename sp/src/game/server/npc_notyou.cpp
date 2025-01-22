@@ -4,15 +4,17 @@
 //
 
 #include "cbase.h"
-#include "ai_basenpc.h"
-#include "ai_basehumanoid.h"
-#include "ai_behavior.h"
 #include "ai_default.h"
 #include "ai_task.h"
 #include "ai_schedule.h"
+#include "ai_node.h"
 #include "ai_hull.h"
-#include "ai_squadslot.h"
+#include "ai_hint.h"
 #include "ai_squad.h"
+#include "ai_senses.h"
+#include "ai_navigator.h"
+#include "ai_motor.h"
+#include "ai_behavior_lead.h"
 #include "soundent.h"
 #include "game.h"
 #include "npcevent.h"
@@ -28,13 +30,12 @@
 #include "grenade_frag.h"
 #include "ndebugoverlay.h"
 #include "SoundEmitterSystem/isoundemittersystembase.h"
-#include "mapbase/ai_grenade.h"
 #include "mapbase/GlobalStrings.h"
 #include "globalstate.h"
 #include "sceneentity.h"
 
 ConVar	sk_notyou_health("sk_notyou_health", "0");
-#define NPC_NOTYOU_MODEL "models/police.mdl" //TEMPTEMPTEMPTEMP
+#define NPC_NOTYOU_MODEL "models/combine_soldier.mdl" //TEMPTEMPTEMPTEMP
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -60,44 +61,15 @@ enum SquadSlot_t
 	SQUAD_SLOT_RUN_SHOOT,
 };
 
-class CNPC_NotYou : public CAI_BaseNPC
-{
-	DECLARE_CLASS(CNPC_NotYou, CAI_BaseNPC);
-	DECLARE_DATADESC();
-	DEFINE_CUSTOM_AI;
-
-public:
-	void	Precache(void);
-	void	Spawn(void);
-	Class_T Classify(void);
-	bool			ShouldMoveAndShoot();
-	float			m_flStopMoveShootTime;
-private:
-	enum
-	{
-		SCHED_NOTYOU_SCHEDULE = BaseClass::NEXT_SCHEDULE,
-		SCHED_NOTYOU_HIDE_AND_RELOAD,
-		NEXT_SCHEDULE,
-	};
-
-	enum
-	{
-		TASK_NOTYOU_TASK = BaseClass::NEXT_TASK,
-	};
-
-	enum
-	{
-		COND_NEORTOU_CONDITION = BaseClass::NEXT_CONDITION,
-	};
-};
-
 LINK_ENTITY_TO_CLASS(npc_notyou, CNPC_NotYou);
 
 //---------------------------------------------------------
 // Save/Restore
 //---------------------------------------------------------
 BEGIN_DATADESC(CNPC_NotYou)
-
+	DEFINE_FIELD(m_nShots, FIELD_INTEGER),
+	DEFINE_FIELD(m_flShotDelay, FIELD_FLOAT),
+	DEFINE_FIELD(m_flStopMoveShootTime, FIELD_TIME),
 END_DATADESC()
 
 //-----------------------------------------------------------------------------
@@ -136,6 +108,7 @@ void CNPC_NotYou::Spawn(void)
 
 	CapabilitiesClear();
 	CapabilitiesAdd(bits_CAP_TURN_HEAD | bits_CAP_MOVE_GROUND);
+	CapabilitiesAdd(bits_CAP_AIM_GUN);
 	CapabilitiesAdd(bits_CAP_MOVE_SHOOT);
 
 	NPCInit();
@@ -154,7 +127,88 @@ Class_T	CNPC_NotYou::Classify(void)
 
 bool CNPC_NotYou::ShouldMoveAndShoot()
 {
+	m_flStopMoveShootTime = FLT_MAX;
+
 	return BaseClass::ShouldMoveAndShoot();
+}
+
+void CNPC_NotYou::PrescheduleThink()
+{
+	BaseClass::PrescheduleThink();
+
+	if (gpGlobals->curtime >= m_flStopMoveShootTime)
+	{
+		// Time to stop move and shoot and start facing the way I'm running.
+		// This makes the combine look attentive when disengaging, but prevents
+		// them from always running around facing you.
+		//
+		// Only do this if it won't be immediately shut off again.
+		if (GetNavigator()->GetPathTimeToGoal() > 1.0f)
+		{
+			m_MoveAndShootOverlay.SuspendMoveAndShoot(5.0f);
+			m_flStopMoveShootTime = FLT_MAX;
+		}
+	}
+
+	if (m_flGroundSpeed > 0 && GetState() == NPC_STATE_COMBAT && m_MoveAndShootOverlay.IsSuspended())
+	{
+		// Return to move and shoot when near my goal so that I 'tuck into' the location facing my enemy.
+		if (GetNavigator()->GetPathTimeToGoal() <= 1.0f)
+		{
+			m_MoveAndShootOverlay.SuspendMoveAndShoot(0);
+		}
+	}
+}
+
+bool CNPC_NotYou::UpdateEnemyMemory(CBaseEntity* pEnemy, const Vector& position, CBaseEntity* pInformer)
+{
+
+	return BaseClass::UpdateEnemyMemory(pEnemy, position, pInformer);
+}
+
+//Stealing this from combine_s for now
+WeaponProficiency_t CNPC_NotYou::CalcWeaponProficiency(CBaseCombatWeapon* pWeapon)
+{
+#ifdef MAPBASE
+	if (pWeapon->ClassMatches(gm_isz_class_AR2))
+#else
+	if (FClassnameIs(pWeapon, "weapon_ar2"))
+#endif
+	{
+		if (hl2_episodic.GetBool())
+		{
+			return WEAPON_PROFICIENCY_VERY_GOOD;
+		}
+		else
+		{
+			return WEAPON_PROFICIENCY_GOOD;
+		}
+	}
+#ifdef MAPBASE
+	else if (pWeapon->ClassMatches(gm_isz_class_Shotgun))
+#else
+	else if (FClassnameIs(pWeapon, "weapon_shotgun"))
+#endif
+	{
+		return WEAPON_PROFICIENCY_PERFECT;
+	}
+#ifdef MAPBASE
+	else if (pWeapon->ClassMatches(gm_isz_class_SMG1))
+#else
+	else if (FClassnameIs(pWeapon, "weapon_smg1"))
+#endif
+	{
+		return WEAPON_PROFICIENCY_GOOD;
+	}
+#ifdef MAPBASE
+	else if (pWeapon->ClassMatches(gm_isz_class_Pistol))
+	{
+		// Mods which need a lower soldier pistol accuracy can either change this value or use proficiency override in Hammer.
+		return WEAPON_PROFICIENCY_VERY_GOOD;
+	}
+#endif
+
+	return BaseClass::CalcWeaponProficiency(pWeapon);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -189,3 +243,4 @@ AI_BEGIN_CUSTOM_NPC(npc_notyou, CNPC_NotYou)
 
 
 AI_END_CUSTOM_NPC()
+
