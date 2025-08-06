@@ -3033,15 +3033,9 @@ int	CHL2_Player::OnTakeDamage( const CTakeDamageInfo &info )
 	if ( GlobalEntity_GetState( "gordon_invulnerable" ) == GLOBAL_ON )
 		return 0;
 
-	// ignore fall damage if instructed to do so by input
-	if ( ( info.GetDamageType() & DMG_FALL ) && m_flTimeIgnoreFallDamage > gpGlobals->curtime )
+	// no fall damage!!! yay!
+	if ( info.GetDamageType() & DMG_FALL )
 	{
-		// usually, we will reset the input flag after the first impact. However there is another input that
-		// prevents this behavior.
-		if ( m_bIgnoreFallDamageResetAfterImpact )
-		{
-			m_flTimeIgnoreFallDamage = 0;
-		}
 		return 0;
 	}
 
