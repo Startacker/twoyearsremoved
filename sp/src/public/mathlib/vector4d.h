@@ -38,7 +38,7 @@ public:
 	vec_t x, y, z, w;
 
 	// Construction/destruction
-	Vector4D(void);
+	Vector4D() = default;
 	Vector4D(vec_t X, vec_t Y, vec_t Z, vec_t W);
 	Vector4D(const float *pFloat);
 #ifdef MAPBASE
@@ -206,14 +206,6 @@ void Vector4DLerp(Vector4D const& src1, Vector4D const& src2, vec_t t, Vector4D&
 //-----------------------------------------------------------------------------
 // constructors
 //-----------------------------------------------------------------------------
-
-inline Vector4D::Vector4D(void)									
-{ 
-#ifdef _DEBUG
-	// Initialize to NAN to catch errors
-	x = y = z = w = VEC_T_NAN;
-#endif
-}
 
 inline Vector4D::Vector4D(vec_t X, vec_t Y, vec_t Z, vec_t W )
 { 

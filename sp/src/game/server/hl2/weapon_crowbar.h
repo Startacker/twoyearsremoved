@@ -33,6 +33,8 @@ public:
 	DECLARE_ACTTABLE();
 
 	CWeaponCrowbar();
+	bool	Deploy(void);
+	bool	Holster(CBaseCombatWeapon* pSwitchingTo);
 
 	float		GetRange( void )		{	return	CROWBAR_RANGE;	}
 	float		GetFireRate( void )		{	return	CROWBAR_REFIRE;	}

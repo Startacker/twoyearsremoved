@@ -70,7 +70,7 @@ public:
 	vec_t x, y, z;
 
 	// Construction/destruction:
-	Vector(void); 
+	Vector() = default;
 	Vector(vec_t X, vec_t Y, vec_t Z);
 	explicit Vector(vec_t XYZ); ///< broadcast initialize
 
@@ -501,15 +501,17 @@ float RandomVectorInUnitCircle( Vector2D *pVector );
 //-----------------------------------------------------------------------------
 // constructors
 //-----------------------------------------------------------------------------
+#ifdef VECTOR_PARANOIA
 inline Vector::Vector(void)									
 { 
 #ifdef _DEBUG
-#ifdef VECTOR_PARANOIA
+
 	// Initialize to NAN to catch errors
 	x = y = z = VEC_T_NAN;
-#endif
+
 #endif
 }
+#endif
 
 inline Vector::Vector(vec_t X, vec_t Y, vec_t Z)						
 { 
@@ -1543,15 +1545,18 @@ class RadianEuler;
 class Quaternion				// same data-layout as engine's vec4_t,
 {								//		which is a vec_t[4]
 public:
+	Quaternion() = default;
+#ifdef VECTOR_PARANOIA
 	inline Quaternion(void)	{ 
 	
 	// Initialize to NAN to catch errors
 #ifdef _DEBUG
-#ifdef VECTOR_PARANOIA
+
 		x = y = z = w = VEC_T_NAN;
 #endif
-#endif
+
 	}
+#endif
 	inline Quaternion(vec_t ix, vec_t iy, vec_t iz, vec_t iw) : x(ix), y(iy), z(iz), w(iw) { }
 	inline Quaternion(RadianEuler const &angle);	// evil auto type promotion!!!
 
@@ -1667,7 +1672,7 @@ class QAngle;
 class RadianEuler
 {
 public:
-	inline RadianEuler(void)							{ }
+	RadianEuler() = default;
 	inline RadianEuler(vec_t X, vec_t Y, vec_t Z)		{ x = X; y = Y; z = Z; }
 	inline RadianEuler(Quaternion const &q);	// evil auto type promotion!!!
 	inline RadianEuler(QAngle const &angles);	// evil auto type promotion!!!
@@ -1777,7 +1782,7 @@ public:
 	vec_t x, y, z;
 
 	// Construction/destruction
-	QAngle(void);
+	QAngle() = default;
 	QAngle(vec_t X, vec_t Y, vec_t Z);
 //	QAngle(RadianEuler const &angles);	// evil auto type promotion!!!
 
@@ -1877,15 +1882,6 @@ inline void VectorMA( const QAngle &start, float scale, const QAngle &direction,
 //-----------------------------------------------------------------------------
 // constructors
 //-----------------------------------------------------------------------------
-inline QAngle::QAngle(void)									
-{ 
-#ifdef _DEBUG
-#ifdef VECTOR_PARANOIA
-	// Initialize to NAN to catch errors
-	x = y = z = VEC_T_NAN;
-#endif
-#endif
-}
 
 inline QAngle::QAngle(vec_t X, vec_t Y, vec_t Z)						
 { 

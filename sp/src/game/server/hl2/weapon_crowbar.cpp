@@ -18,6 +18,11 @@
 #include "npcevent.h"
 #include "ai_basenpc.h"
 #include "weapon_crowbar.h"
+#include "soundenvelope.h"
+
+#ifdef CLIENT_DLL
+#include "recipientfilter.h"
+#endif
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
@@ -74,6 +79,28 @@ IMPLEMENT_ACTTABLE(CWeaponCrowbar);
 //-----------------------------------------------------------------------------
 CWeaponCrowbar::CWeaponCrowbar( void )
 {
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+// Output : Returns true on success, false on failure.
+//-----------------------------------------------------------------------------
+bool CWeaponCrowbar::Deploy(void)
+{
+	CPASAttenuationFilter filter(this, "Weapon_Crowbar.Idle");
+	filter.MakeReliable();
+
+	EmitSound(filter, entindex(), "Weapon_Crowbar.Idle");
+	return BaseClass::Deploy();
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CWeaponCrowbar::Holster(CBaseCombatWeapon* pSwitchingTo)
+{
+	StopSound("Weapon_Crowbar.Idle");
+	return BaseClass::Holster(pSwitchingTo);
 }
 
 //-----------------------------------------------------------------------------

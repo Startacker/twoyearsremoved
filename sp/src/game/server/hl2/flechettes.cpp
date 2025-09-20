@@ -194,11 +194,11 @@ void CFlechette::Precache()
 	PrecacheModel(FLECHETTE_MODEL);
 	PrecacheModel("sprites/light_glow02_noz.vmt");
 
-	PrecacheScriptSound("NPC_Hunter.FlechetteNearmiss");
-	PrecacheScriptSound("NPC_Hunter.FlechetteHitBody");
-	PrecacheScriptSound("NPC_Hunter.FlechetteHitWorld");
-	PrecacheScriptSound("NPC_Hunter.FlechettePreExplode");
-	PrecacheScriptSound("NPC_Hunter.FlechetteExplode");
+	PrecacheScriptSound("Flechette.Nearmiss");
+	PrecacheScriptSound("Flechette.HitBody");
+	PrecacheScriptSound("Flechette.HitWorld");
+	PrecacheScriptSound("Flechette.PreExplode");
+	PrecacheScriptSound("Flechette.Explode");
 
 	PrecacheParticleSystem("hunter_flechette_trail_striderbuster");
 	PrecacheParticleSystem("hunter_flechette_trail");
@@ -208,7 +208,7 @@ void CFlechette::Precache()
 
 void CFlechette::StickTo(CBaseEntity* pOther, trace_t& tr)
 {
-	EmitSound("NPC_Hunter.FlechetteHitWorld");
+	EmitSound("Flechette.HitWorld");
 
 	SetMoveType(MOVETYPE_NONE);
 
@@ -361,7 +361,7 @@ void CFlechette::FlechetteTouch(CBaseEntity* pOther)
 		SetAbsVelocity(Vector(0, 0, 0));
 
 		// play body "thwack" sound
-		EmitSound("NPC_Hunter.FlechetteHitBody");
+		EmitSound("Flechette.HitBody");
 
 		StopParticleEffects(this);
 
@@ -462,7 +462,7 @@ void CFlechette::DopplerThink()
 
 	if (flPlayerDot <= flMyDot)
 	{
-		EmitSound("NPC_Hunter.FlechetteNearMiss");
+		EmitSound("Flechette.NearMiss");
 
 		// We've played the near miss sound and we're not seeking. Stop thinking.
 		SetThink(NULL);
@@ -499,7 +499,7 @@ void CFlechette::Shoot(Vector& vecVelocity, bool bBrightFX)
 
 void CFlechette::DangerSoundThink()
 {
-	EmitSound("NPC_Hunter.FlechettePreExplode");
+	EmitSound("Flechette.PreExplode");
 
 	CSoundEnt::InsertSound(SOUND_DANGER | SOUND_CONTEXT_EXCLUDE_COMBINE, GetAbsOrigin(), 150.0f, 0.5, this);
 	SetThink(&CFlechette::ExplodeThink);
@@ -518,7 +518,7 @@ void CFlechette::Explode()
 	// Don't catch self in own explosion!
 	m_takedamage = DAMAGE_NO;
 
-	EmitSound("NPC_Hunter.FlechetteExplode");
+	EmitSound("Flechette.Explode");
 
 	// Move the explosion effect to the tip to reduce intersection with the world.
 	Vector vecFuse;

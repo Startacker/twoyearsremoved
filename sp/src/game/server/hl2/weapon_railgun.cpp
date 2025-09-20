@@ -830,7 +830,7 @@ bool CWeaponRailgun::Holster( CBaseCombatWeapon *pSwitchingTo )
  
 		UTIL_Remove( m_hHook );
 		m_hHook = NULL;
- 
+
 		NotifyHookDied();
  
 		m_bMustReload = true;

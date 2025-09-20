@@ -583,7 +583,7 @@ inline void ScriptVariant_t::EmplaceAllocedVector( const Vector &vec )
 union ScriptVariantTemporaryStorage_t
 {
 	// members must be initialized via placement-new
-	ScriptVariantTemporaryStorage_t() { }
+	ScriptVariantTemporaryStorage_t() = default;
 
 	// members must have trivial destructor, since no destructor will be invoked
 	Vector m_vec;
