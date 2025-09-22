@@ -347,7 +347,7 @@ void CFlechette::FlechetteTouch(CBaseEntity* pOther)
 			flDamage = MAX(pOther->GetHealth(), flDamage);
 		}
 
-		CTakeDamageInfo	dmgInfo(this, GetOwnerEntity(), flDamage, DMG_DISSOLVE | DMG_NEVERGIB);
+		CTakeDamageInfo	dmgInfo(this, GetOwnerEntity(), flDamage, DMG_SLASH | DMG_NEVERGIB);
 		CalculateMeleeDamageForce(&dmgInfo, vecNormalizedVel, tr.endpos, 0.7f);
 		dmgInfo.SetDamagePosition(tr.endpos);
 		pOther->DispatchTraceAttack(dmgInfo, vecNormalizedVel, &tr);
@@ -536,16 +536,18 @@ void CFlechette::Explode()
 		DispatchParticleEffect("hunter_projectile_explosion_1", vecFuse, GetAbsAngles(), NULL);
 	}
 
-	int nDamageType = DMG_DISSOLVE;
+	int nDamageType = DMG_BLAST;
 
 	// Perf optimization - only every other explosion makes a physics force. This is
 	// hardly noticeable since flechettes usually explode in clumps.
+	/*
 	static int s_nExplosionCount = 0;
 	s_nExplosionCount++;
 	if ((s_nExplosionCount & 0x01) && flechette_cheap_explosions.GetBool())
 	{
 		nDamageType |= DMG_PREVENT_PHYSICS_FORCE;
 	}
+	*/
 
 	RadiusDamage(CTakeDamageInfo(this, GetOwnerEntity(), sk_flechette_explode_dmg.GetFloat(), nDamageType), GetAbsOrigin(), explosionRadius, CLASS_NONE, NULL);
 

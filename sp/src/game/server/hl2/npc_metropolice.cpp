@@ -490,7 +490,8 @@ void CNPC_MetroPolice::NotifyDeadFriend( CBaseEntity* pFriend )
 		m_Sentences.Speak( "METROPOLICE_MANHACK_KILLED", SENTENCE_PRIORITY_NORMAL, SENTENCE_CRITERIA_NORMAL );
 #endif
 		DevMsg("My manhack died!\n");
-		m_hManhack = NULL;
+		//Unnecessary since m_hManhack is already being set to NULL after being deployed, which causes a crash if a metrocop is in the middle of deploying another manhack!!!
+		//m_hManhack = NULL;
 		m_iActiveManhacks--;
 		return;
 	}
@@ -5860,7 +5861,7 @@ bool CNPC_MetroPolice::CanDeployManhack( void )
 	if ( HasSpawnFlags( SF_METROPOLICE_NO_MANHACK_DEPLOY ) )
 		return false;
 
-	// Nope, already have one out.
+	// Nope, already sending one out.
 	if( m_hManhack != NULL )
 		return false;
 
