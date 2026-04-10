@@ -372,7 +372,11 @@ void CWeaponAR2::PierceShot(Vector& vecSrc, bool FirstShot )
 
 	Vector	vecAiming = pPlayer->GetAutoaimVector(AUTOAIM_SCALE_DEFAULT);
 	Vector	vecLooking = pPlayer->Weapon_ShootPosition();
-	int iAttachment = GetTracerAttachment();
+	//int iAttachment = GetTracerAttachment();
+	//Vector vMuzzle;
+	//QAngle angles;
+	//GetAttachment(LookupAttachment("muzzle"), vMuzzle, NULL);
+	//AngleVectors(angles, &vMuzzle);
 
 	if (FirstShot == true)
 	{
@@ -380,11 +384,14 @@ void CWeaponAR2::PierceShot(Vector& vecSrc, bool FirstShot )
 		pPlayer->FireBullets(1, vecSrc, vecAiming, vec3_origin, MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 0, -1, -1, 40, NULL, true, false);
 
 		Vector	vecAimingEnd = vecLooking + (vecAiming * MAX_TRACE_LENGTH);
+		//Vector vFinal = vecLooking + vMuzzle;
 		
 		trace_t tr;
 		UTIL_TraceLine(vecLooking, vecAimingEnd, MASK_SHOT, pPlayer, COLLISION_GROUP_NONE, &tr);
 
-		UTIL_ParticleTracer("piercer_tracer", vecLooking, tr.endpos, entindex(), iAttachment, true);
+		UTIL_ParticleTracer("piercer_tracer", vecLooking, tr.endpos, entindex(), 1, true);
+		DevMsg("vecLooking: <%f, %f, %f>\n", vecLooking.x, vecLooking.y, vecLooking.z);
+		//DevMsg("vMuzzle: <%f, %f, %f>\n", vMuzzle.x, vMuzzle.y, vMuzzle.z);
 
 		if (tr.m_pEnt)
 		{
@@ -423,7 +430,7 @@ void CWeaponAR2::PierceShot(Vector& vecSrc, bool FirstShot )
 		Msg("PERFORMING SECOND SHOT\n");
 		Vector	vecAimingEnd = vecLooking + (vecAiming * MAX_TRACE_LENGTH);
 		trace_t tr2;
-		UTIL_ParticleTracer("piercer_tracer", vecSrc, tr2.endpos, entindex(), iAttachment, true);
+		UTIL_ParticleTracer("piercer_tracer", vecSrc, tr2.endpos, entindex(), 0, true);
 		UTIL_TraceLine(vecSrc, vecAimingEnd, MASK_SHOT, pPlayer, COLLISION_GROUP_NONE, &tr2);
 		pPlayer->FireBullets(1, vecSrc, vecAiming, vec3_origin, MAX_TRACE_LENGTH, m_iPrimaryAmmoType, 0, -1, -1, 40, NULL, true, false);
 
