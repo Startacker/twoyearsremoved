@@ -24,6 +24,8 @@ $Group "game"
 	"vgui_controls"
 	"vscript"
 	"responserules"
+	"video_services"
+	"vaudio_minimp3"
 }
 
 $Group "shaderdlls"
