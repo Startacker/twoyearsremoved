@@ -50,6 +50,7 @@ BEGIN_DATADESC( CBaseDoor )
 	DEFINE_KEYFIELD( m_flWaveHeight, FIELD_FLOAT, "WaveHeight" ),
 	DEFINE_KEYFIELD( m_flBlockDamage, FIELD_FLOAT, "dmg" ),
 	DEFINE_KEYFIELD( m_eSpawnPosition, FIELD_INTEGER, "spawnpos" ),
+	DEFINE_KEYFIELD( m_OpenOnMapSpawn, FIELD_INTEGER, "openonmapstart"),
 
 	DEFINE_KEYFIELD( m_bForceClosed, FIELD_BOOLEAN, "forceclosed" ),
 	DEFINE_FIELD( m_bDoorGroup, FIELD_BOOLEAN ),
@@ -336,6 +337,12 @@ void CBaseDoor::Spawn()
 	}
 
 	CreateVPhysics();
+
+	if (m_OpenOnMapSpawn == 1) //Open the door upon starting up, don't play any sounds
+	{
+		m_AutoOpenHack = true;
+		DoorActivate();
+	}
 
 #ifdef TF_DLL
 	if ( TFGameRules() && TFGameRules()->IsMultiplayer() )
@@ -950,10 +957,13 @@ void CBaseDoor::DoorGoUp( void )
 	// filter them out and leave a client stuck with looping door sounds!
 	if ( !HasSpawnFlags(SF_DOOR_SILENT ) )
 	{
-		// If we're not moving already, start the moving noise
-		if ( m_toggle_state != TS_GOING_UP && m_toggle_state != TS_GOING_DOWN )
+		if (m_AutoOpenHack == false)
 		{
-			StartMovingSound();
+			// If we're not moving already, start the moving noise
+			if (m_toggle_state != TS_GOING_UP && m_toggle_state != TS_GOING_DOWN)
+			{
+				StartMovingSound();
+			}
 		}
 	}
 
@@ -1012,17 +1022,24 @@ void CBaseDoor::DoorHitTop( void )
 {
 	if ( !HasSpawnFlags( SF_DOOR_SILENT ) )
 	{
-		CPASAttenuationFilter filter( this );
-		filter.MakeReliable();
-		StopMovingSound();
+		if (m_AutoOpenHack == false)
+		{
+			CPASAttenuationFilter filter(this);
+			filter.MakeReliable();
+			StopMovingSound();
 
-		EmitSound_t ep;
-		ep.m_nChannel = CHAN_STATIC;
-		ep.m_pSoundName = (char*)STRING(m_NoiseArrived);
-		ep.m_flVolume = 1;
-		ep.m_SoundLevel = SNDLVL_NORM;
+			EmitSound_t ep;
+			ep.m_nChannel = CHAN_STATIC;
+			ep.m_pSoundName = (char*)STRING(m_NoiseArrived);
+			ep.m_flVolume = 1;
+			ep.m_SoundLevel = SNDLVL_NORM;
 
-		EmitSound( filter, entindex(), ep );
+			EmitSound(filter, entindex(), ep);
+		}
+		else
+		{
+			m_AutoOpenHack = false;
+		}
 	}
 
 	ASSERT(m_toggle_state == TS_GOING_UP);
@@ -1064,10 +1081,13 @@ void CBaseDoor::DoorGoDown( void )
 {
 	if ( !HasSpawnFlags( SF_DOOR_SILENT ) )
 	{
-		// If we're not moving already, start the moving noise
-		if ( m_toggle_state != TS_GOING_UP && m_toggle_state != TS_GOING_DOWN )
+		if (m_AutoOpenHack == false)
 		{
-			StartMovingSound();
+			// If we're not moving already, start the moving noise
+			if (m_toggle_state != TS_GOING_UP && m_toggle_state != TS_GOING_DOWN)
+			{
+				StartMovingSound();
+			}
 		}
 	}
 	
@@ -1094,21 +1114,28 @@ void CBaseDoor::DoorHitBottom( void )
 {
 	if ( !HasSpawnFlags( SF_DOOR_SILENT ) )
 	{
-		CPASAttenuationFilter filter( this );
-		filter.MakeReliable();
+		if (m_AutoOpenHack == false)
+		{
+			CPASAttenuationFilter filter(this);
+			filter.MakeReliable();
 
-		StopMovingSound();
+			StopMovingSound();
 
-		EmitSound_t ep;
-		ep.m_nChannel = CHAN_STATIC;
-		if ( m_NoiseArrivedClosed == NULL_STRING )
-			ep.m_pSoundName = (char*)STRING(m_NoiseArrived);
+			EmitSound_t ep;
+			ep.m_nChannel = CHAN_STATIC;
+			if (m_NoiseArrivedClosed == NULL_STRING)
+				ep.m_pSoundName = (char*)STRING(m_NoiseArrived);
+			else
+				ep.m_pSoundName = (char*)STRING(m_NoiseArrivedClosed);
+			ep.m_flVolume = 1;
+			ep.m_SoundLevel = SNDLVL_NORM;
+
+			EmitSound(filter, entindex(), ep);
+		}
 		else
-			ep.m_pSoundName = (char*)STRING(m_NoiseArrivedClosed);
-		ep.m_flVolume = 1;
-		ep.m_SoundLevel = SNDLVL_NORM;
-
-		EmitSound( filter, entindex(), ep );
+		{
+			m_AutoOpenHack = false;
+		}
 	}
 
 	ASSERT(m_toggle_state == TS_GOING_DOWN);

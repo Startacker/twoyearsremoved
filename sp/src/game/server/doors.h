@@ -115,9 +115,11 @@ public:
 	bool	m_bLocked;				// Whether the door is locked
 	bool	m_bIgnoreDebris;
 	bool	m_bIgnoreNonPlayerEntsOnBlock;	// Non-player entities should never block.  This variable needs more letters.
+	bool	m_AutoOpenHack;		//Hacky method to not play sounds upon opening at map start
 	
 	FuncDoorSpawnPos_t m_eSpawnPosition;
-
+	
+	int m_OpenOnMapSpawn;			//Opens or closes the door upon spawning
 	float	m_flBlockDamage;		// Damage inflicted when blocked.
 	string_t	m_NoiseMoving;		//Start/Looping sound
 	string_t	m_NoiseArrived;		//End sound
